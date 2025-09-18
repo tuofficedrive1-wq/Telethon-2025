@@ -117,7 +117,7 @@
         const RANK_CANDIDATES = ["Rank", "S. R.", "S.R.", "S R", "Sr", "Serial", "S No", "S.No"];
         const USTAZ_CANDIDATES = ["Ustaz Name", "USTAZ NAME", "Ustaz", "Ustad", "Instructor", "Teacher"];
         const JAMIA_CANDIDATES = ["Jamia Name", "JAMIA NAME", "Jamia", "Jamiah"];
-        const RAQAM_CANDIDATES = ["Raqam", "RAQAM", "Amount", "Value", "رقم"];
+        const RAQAM_CANDIDATES = ["Raqam", "RAQAM", "Amount", "Value", "रقم"];
         const UNIT_CANDIDATES = ["Unit", "UNIT", "Units"];
 
         function findColumnByCandidates(cols, candidates) {
@@ -276,7 +276,8 @@
                         </header>
 
                         <nav className="mb-4">
-                            <div className="flex flex-wrap gap-2">
+                            {/* Desktop Navigation */}
+                            <div className="hidden md:flex flex-wrap gap-2">
                                 {options.map((opt) => {
                                     const cfg = DEFAULT_SHEET_CONFIGS[opt];
                                     const id = overrides[opt] ?? cfg.id ?? "";
@@ -297,6 +298,21 @@
                                         </button>
                                     );
                                 })}
+                            </div>
+
+                            {/* Mobile Dropdown */}
+                            <div className="md:hidden">
+                                <label htmlFor="class-select" className="sr-only">Select a Class</label>
+                                <select
+                                    id="class-select"
+                                    value={active}
+                                    onChange={(e) => setActive(e.target.value)}
+                                    className="block w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                >
+                                    {options.map((opt) => (
+                                        <option key={opt} value={opt}>{opt}</option>
+                                    ))}
+                                </select>
                             </div>
                         </nav>
                         
@@ -326,7 +342,8 @@
                                 {isLoading && <div className="text-sm text-slate-600 mb-2">Loading…</div>}
                                 {error && isValidSheetId(getActiveConfig().id) && <div className="text-sm text-rose-600 mb-2">Fetch error: {error}</div>}
 
-                                <div>
+                                {/* Desktop Table */}
+                                <div className="hidden md:block">
                                     {/* Header row */}
                                     <div className="grid grid-cols-12 items-center px-3 py-2 border-b text-sm font-semibold text-slate-700">
                                         <div className="col-span-1">Rank</div>
@@ -376,6 +393,45 @@
 
                                         {(!data.items || data.items.length === 0) && <div className="text-sm text-slate-500 p-3">No valid rows found (ensure Jamia Name and Raqam columns exist and Raqam values are numeric).</div>}
                                     </div>
+                                </div>
+
+                                {/* Mobile List View */}
+                                <div className="md:hidden space-y-4">
+                                    {data.items.map((it, idx) => {
+                                        const isTop = idx === 0;
+                                        const isSecond = idx === 1;
+                                        const isThird = idx === 2;
+                                        const medal = medalForIndex(idx);
+                                        const highlight = it.__id === highlightKey;
+                                        const styleClass = isTop
+                                                ? "bg-yellow-50 border border-yellow-200"
+                                                : isSecond
+                                                ? "bg-sky-50 border border-sky-200"
+                                                : isThird
+                                                ? "bg-emerald-50 border border-emerald-200"
+                                                : "bg-white border-transparent";
+                                        
+                                        return (
+                                            <div key={it.__id} className={`p-4 rounded-lg shadow-sm transition-all duration-600 transform ${styleClass} ${highlight ? "highlight-pulse" : ""}`} style={{ willChange: "transform, box-shadow" }}>
+                                                <div className="flex items-center justify-between">
+                                                    <div className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                                        <span>{idx + 1}.</span>
+                                                        <span>{it.jamia}</span>
+                                                        <span>{medal}</span>
+                                                    </div>
+                                                    <div className={`text-xl font-bold text-right ${isTop ? "text-green-600" : "text-slate-700"}`}>
+                                                        {it.__value.toLocaleString()}
+                                                    </div>
+                                                </div>
+                                                <div className="mt-2 text-sm text-slate-600 flex justify-between">
+                                                    <div><span className="font-semibold">Ustaz:</span> {it.ustaz || "-"}</div>
+                                                    <div><span className="font-semibold">Unit:</span> {it.unit || "-"}</div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+
+                                    {(!data.items || data.items.length === 0) && <div className="text-sm text-slate-500 p-3">No valid rows found (ensure Jamia Name and Raqam columns exist and Raqam values are numeric).</div>}
                                 </div>
                             </div>
                         </main>
