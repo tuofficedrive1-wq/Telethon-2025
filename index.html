@@ -267,12 +267,6 @@
                 setError(null);
             }
 
-            function getActiveIdLabel() {
-                const { id } = getActiveConfig();
-                if (!id) return "Not configured";
-                return `Configured (id: ${id.slice(0, 8)}… )`;
-            }
-
             return (
                 <div className="min-h-screen bg-gray-50 p-6 rounded-2xl">
                     <div className="max-w-7xl mx-auto">
@@ -308,7 +302,6 @@
                         
                         <div className="flex flex-col items-center justify-center p-4 bg-purple-200 rounded-lg shadow-md mb-4">
                             <h2 className="text-xl font-bold text-purple-800 text-center">{active}</h2>
-                            <div className="text-sm text-purple-600 mt-1">{getActiveIdLabel()}</div>
                         </div>
 
                         <main>
