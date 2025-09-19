@@ -115,9 +115,10 @@
         }
 
         const RANK_CANDIDATES = ["Rank", "S. R.", "S.R.", "S R", "Sr", "Serial", "S No", "S.No"];
-        const USTAZ_CANDIDATES = ["Ustaz Name", "USTAZ NAME", "Ustaz", "Ustad", "Instructor", "Teacher"];
+        // Updated to include "Class" as a candidate for the Ustaz Name column
+        const USTAZ_CANDIDATES = ["Ustaz Name", "USTAZ NAME", "Ustaz", "Ustad", "Instructor", "Teacher", "Class"];
         const JAMIA_CANDIDATES = ["Jamia Name", "JAMIA NAME", "Jamia", "Jamiah"];
-        const RAQAM_CANDIDATES = ["Raqam", "RAQAM", "Amount", "Value", "रقم"];
+        const RAQAM_CANDIDATES = ["Raqam", "RAQAM", "Amount", "Value", "रकम", "राशि"];
         const UNIT_CANDIDATES = ["Unit", "UNIT", "Units"];
 
         function findColumnByCandidates(cols, candidates) {
@@ -266,6 +267,8 @@
                 setSheetInput("");
                 setError(null);
             }
+            
+            const ustazLabel = active === 'Takhassusat' ? 'Class' : 'Ustaz Name';
 
             return (
                 <div className="min-h-screen bg-gray-50 p-6 rounded-2xl">
@@ -347,7 +350,7 @@
                                     {/* Header row */}
                                     <div className="grid grid-cols-12 items-center px-3 py-2 border-b text-sm font-semibold text-slate-700">
                                         <div className="col-span-1">Rank</div>
-                                        <div className="col-span-2">Ustaz Name</div>
+                                        <div className="col-span-2">{ustazLabel}</div>
                                         <div className="col-span-6 text-center">Jamia Name</div>
                                         <div className="col-span-2 text-right">Raqam</div>
                                         <div className="col-span-1 text-right">Unit</div>
@@ -424,7 +427,7 @@
                                                     </div>
                                                 </div>
                                                 <div className="mt-2 text-sm text-slate-600 flex justify-between">
-                                                    <div><span className="font-semibold">Ustaz:</span> {it.ustaz || "-"}</div>
+                                                    <div><span className="font-semibold">{ustazLabel}:</span> {it.ustaz || "-"}</div>
                                                     <div><span className="font-semibold">Unit:</span> {it.unit || "-"}</div>
                                                 </div>
                                             </div>
@@ -453,5 +456,3 @@
 
 </body>
 </html>
-
-
