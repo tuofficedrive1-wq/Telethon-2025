@@ -190,7 +190,7 @@
             const pollRef = useRef(null);
             
             // Countdown state and result data
-            const targetDate = new Date('September 25, 2025 22:30:00 GMT+0530');
+            const targetDate = new Date('September 26, 2025 22:30:00 GMT+0530');
             const [countdown, setCountdown] = useState(calculateTimeRemaining(targetDate));
             const [resultData, setResultData] = useState({});
             const [isResultLoading, setResultLoading] = useState(false);
@@ -419,7 +419,7 @@
                         <main>
                             {active === "Result" ? (
                                 <div className="bg-white border rounded-lg p-6 text-center shadow-lg">
-                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">Today Telethon Result</h2>
+                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">Mini Telethon Result</h2>
                                     {countdown.expired ? (
                                         <>
                                             <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announced!</div>
@@ -612,5 +612,6 @@
 
 </body>
 </html>
+
 
 
