@@ -15,6 +15,7 @@
     <style>
         body {
             font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9; /* Slate 100 */
         }
         /* Custom CSS for top 3 rows highlight animation */
         .highlight-pulse {
@@ -31,6 +32,37 @@
                 box-shadow: 0 0 0 4px rgba(16, 185, 129, 0);
             }
         }
+
+        /* Custom CSS for Loading Spinner */
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6; /* Blue 500 */
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* NEW: Custom CSS for smooth transitions on rank items */
+        .rank-item {
+            /* Smooth transition for position changes */
+            transition: all 0.5s ease-in-out;
+            will-change: transform, box-shadow;
+        }
+        /* Hide loading when data is already present (removed from logic, but keeping style for other tabs) */
+        .loading-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.6);
+            z-index: 10;
+        }
     </style>
 </head>
 <body class="bg-slate-100">
@@ -38,13 +70,82 @@
     <div id="root"></div>
 
     <!-- React CDN -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <!-- Babel Standalone to transpile JSX in the browser -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
+        
+        // --- Utility Functions for Formatting and Animation ---
+
+        // Formatter for Currency
+        const formatCurrency = (amount) => {
+            // Round to nearest integer for clean animation and display
+            return '₹ ' + new Intl.NumberFormat('en-IN').format(Math.round(amount));
+        };
+
+        // Formatter for Unit
+        const formatUnit = (unit) => {
+            return new Intl.NumberFormat('en-IN').format(Math.round(unit));
+        };
+
+        // Component for smooth number animation (Kept for other total numbers if needed, but not used in Overall Rank now)
+        const AnimatedNumber = ({ value, duration = 1500, formatter }) => {
+            const [displayValue, setDisplayValue] = useState(value);
+            const previousValueRef = useRef(value);
+
+            useEffect(() => {
+                let startTimestamp;
+                const startValue = previousValueRef.current || 0;
+                const endValue = value || 0;
+                
+                // If value hasn't changed or component is new and value is 0, skip animation
+                if (endValue === startValue) {
+                    setDisplayValue(endValue);
+                    return;
+                }
+
+                const step = (timestamp) => {
+                    if (!startTimestamp) startTimestamp = timestamp;
+                    const elapsed = timestamp - startTimestamp;
+                    const progress = Math.min(1, elapsed / duration);
+
+                    // Easing function (simple cubic ease-out)
+                    const easedProgress = 1 - Math.pow(1 - progress, 3); 
+
+                    const currentValue = startValue + (endValue - startValue) * easedProgress;
+                    setDisplayValue(currentValue);
+
+                    if (progress < 1) {
+                        requestAnimationFrame(step);
+                    } else {
+                        setDisplayValue(endValue); 
+                    }
+                };
+
+                const animationFrameId = requestAnimationFrame(step);
+
+                // Cleanup function
+                return () => {
+                    cancelAnimationFrame(animationFrameId);
+                    // Update previous value for the next render cycle
+                    previousValueRef.current = endValue; 
+                };
+            }, [value, duration]);
+
+            // Update ref for immediate re-render on value change if component re-mounts
+            useEffect(() => {
+                previousValueRef.current = value;
+            }, [value]);
+
+
+            return <span>{formatter(displayValue)}</span>;
+        };
+        
+        // --- Google Sheet Configuration and Logic (Original) ---
+        
         const DEFAULT_SHEET_CONFIGS = {
             "Ibtidaiya": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Ibtidaiya" },
             "Sale Awwal": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Sale Awwal" },
@@ -58,12 +159,15 @@
             "Sabia": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Sabia" },
             "Doratul Hadis": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Daurul Hadis" },
             "Takhassusat": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Takhassusat" },
+            // Overall Rank and Result tabs are special cases
+            "Overall Rank": { id: null, sheet: null },
             "Result": { id: null, sheet: null }
         };
 
         const POLL_INTERVAL_MS = 5000;
         const LOCALSTORAGE_KEY = "telethone_sheet_overrides_enhanced_live";
 
+        // Utility function to extract the Google Sheet ID from various URLs or raw input
         function parseSheetIdFromUrl(input) {
             if (!input) return null;
             input = input.trim();
@@ -75,54 +179,81 @@
             return null;
         }
 
+        // Utility function to validate the extracted Sheet ID
         function isValidSheetId(id) {
             return Boolean(id && /^[a-zA-Z0-9-_]{10,}$/.test(id));
         }
 
+        // Constructs the Google Visualization API URL
         function gvizUrl(sheetId, sheetName) {
             return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
         }
 
+        // Fetches and parses data from the Google Sheet via GViz API
         async function fetchSheetData(sheetId, sheetName) {
-            const url = gvizUrl(sheetId, sheetName);
-            const res = await fetch(url, { cache: "no-cache" });
-            if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
-            const text = await res.text();
+            for (let attempt = 0; attempt < 3; attempt++) {
+                try {
+                    const url = gvizUrl(sheetId, sheetName);
+                    const res = await fetch(url, { cache: "no-cache" });
+                    
+                    if (res.status === 429) { 
+                        if (attempt < 2) {
+                            const delay = Math.pow(2, attempt) * 1000;
+                            await new Promise(resolve => setTimeout(resolve, delay));
+                            continue;
+                        }
+                        throw new Error("Too many requests to Google Sheets API.");
+                    }
 
-            let jsonText = null;
-            const match = text.match(/setResponse\(([\s\S]*)\);?\s*$/);
-            if (match && match[1]) jsonText = match[1];
-            else {
-                const first = text.indexOf('{');
-                const last = text.lastIndexOf('}');
-                if (first !== -1 && last !== -1 && last > first) jsonText = text.slice(first, last + 1);
+                    if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+                    const text = await res.text();
+
+                    let jsonText = null;
+                    const match = text.match(/setResponse\(([\s\S]*)\);?\s*$/);
+                    if (match && match[1]) jsonText = match[1];
+                    else {
+                        const first = text.indexOf('{');
+                        const last = text.lastIndexOf('}');
+                        if (first !== -1 && last !== -1 && last > first) jsonText = text.slice(first, last + 1);
+                    }
+
+                    if (!jsonText) throw new Error('Could not extract JSON from GViz response; sheet may not be published or allowed.');
+
+                    let data;
+                    try {
+                        data = JSON.parse(jsonText);
+                    } catch (err) {
+                        throw new Error('Failed to parse GViz JSON — ' + err.message);
+                    }
+
+                    const cols = (data.table.cols || []).map((c, i) => (c.label || c.id || `col${i}`).toString());
+                    const rows = (data.table.rows || []).map((r) => r.c.map((cell) => (cell ? (cell.f !== undefined ? cell.f : cell.v) : null)));
+                    const items = rows.map((r) => {
+                        const obj = {};
+                        cols.forEach((k, i) => (obj[k || `col${i}`] = r[i]));
+                        return obj;
+                    });
+                    return { cols, items };
+
+                } catch (error) {
+                    if (attempt === 2) throw error;
+                    if (error.message.includes("Too many requests")) throw error;
+                    const delay = Math.pow(2, attempt) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                }
             }
-
-            if (!jsonText) throw new Error('Could not extract JSON from GViz response; sheet may not be published or allowed.');
-
-            let data;
-            try {
-                data = JSON.parse(jsonText);
-            } catch (err) {
-                throw new Error('Failed to parse GViz JSON — ' + err.message);
-            }
-
-            const cols = (data.table.cols || []).map((c, i) => (c.label || c.id || `col${i}`).toString());
-            const rows = (data.table.rows || []).map((r) => r.c.map((cell) => (cell ? (cell.f !== undefined ? cell.f : cell.v) : null)));
-            const items = rows.map((r) => {
-                const obj = {};
-                cols.forEach((k, i) => (obj[k || `col${i}`] = r[i]));
-                return obj;
-            });
-            return { cols, items };
+            throw new Error("Failed to fetch sheet data after multiple retries.");
         }
 
+
+        // Candidate headers for automatic column mapping
         const RANK_CANDIDATES = ["Rank", "S. R.", "S.R.", "S R", "Sr", "Serial", "S No", "S.No"];
         const USTAZ_CANDIDATES = ["Ustaz Name", "USTAZ NAME", "Ustaz", "Ustad", "Instructor", "Teacher", "Class"];
         const JAMIA_CANDIDATES = ["Jamia Name", "JAMIA NAME", "Jamia", "Jamiah"];
         const RAQAM_CANDIDATES = ["Raqam", "RAQAM", "Amount", "Value", "रकम", "राशि"];
         const UNIT_CANDIDATES = ["Unit", "UNIT", "Units"];
 
+        // Finds the correct column header based on a list of candidates
         function findColumnByCandidates(cols, candidates) {
             const lower = cols.map((c) => (c || "").toLowerCase().trim());
             for (let cand of candidates) {
@@ -138,6 +269,7 @@
             return null;
         }
 
+        // Returns a medal emoji for the top 3 ranks
         function medalForIndex(i) {
             if (i === 0) return "🥇";
             if (i === 1) return "🥈";
@@ -161,11 +293,26 @@
 
             return { days, hours, minutes, seconds, expired: false };
         }
+        
+        // Function to safely parse a string to a number
+        function parseNumericValue(value, isInteger = false) {
+            if (value === null || value === undefined || String(value).trim() === "") {
+                return NaN;
+            }
+            const cleaned = String(value).replace(/[^0-9.-]+/g, "");
+            const n = Number(cleaned);
+            
+            if (Number.isNaN(n)) return NaN;
+            
+            return isInteger ? Math.round(n) : n;
+        }
+
 
         function TelethoneEnhancedLive() {
             const options = Object.keys(DEFAULT_SHEET_CONFIGS);
-            const [active, setActive] = useState(options[0]);
+            const [active, setActive] = useState("Ibtidaiya"); // Changed default to a class
 
+            // State to handle user-defined sheet ID overrides
             const [overrides, setOverrides] = useState(() => {
                 try {
                     const raw = localStorage.getItem(LOCALSTORAGE_KEY);
@@ -176,14 +323,17 @@
                 return out;
             });
 
+            // Persist overrides to localStorage
             useEffect(() => {
                 try {
                     localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(overrides));
                 } catch (e) {}
             }, [overrides]);
 
+            // Main dashboard data states
             const [data, setData] = useState({ items: [] });
-            const [isLoading, setLoading] = useState(false);
+            const [isLoading, setLoading] = useState(true); 
+            const [isDataLoaded, setIsDataLoaded] = useState(false);
             const [error, setError] = useState(null);
             const [sheetInput, setSheetInput] = useState("");
             const [highlightKey, setHighlightKey] = useState(null);
@@ -196,14 +346,28 @@
             const [isResultLoading, setResultLoading] = useState(false);
             const [resultError, setResultError] = useState(null);
 
+            // NEW: Overall Rank States
+            const [overallRankData, setOverallRankData] = useState([]);
+            // State for the big animated numbers (Kept, but not rendered)
+            const [overallTotalAmount, setOverallTotalAmount] = useState(0); 
+            const [overallTotalUnit, setOverallTotalUnit] = useState(0);
+            
+            const [isRankLoading, setRankLoading] = useState(true);
+            const [isRankDataLoaded, setIsRankDataLoaded] = useState(false);
+            const [rankError, setRankError] = useState(null);
+
+
+            // Gets the Sheet ID and sheet name for the active tab
             function getActiveConfig() {
                 const cfg = DEFAULT_SHEET_CONFIGS[active] || { id: "", sheet: "Sheet1" };
                 const id = overrides[active] ?? cfg.id ?? "";
                 return { id, sheet: cfg.sheet || "Sheet1" };
             }
 
+            // Function to fetch and process data for the active sheet (Individual Class)
             async function loadActiveSheet() {
                 const { id, sheet } = getActiveConfig();
+                
                 if (!isValidSheetId(id)) {
                     setData({ items: [] });
                     setError(null);
@@ -211,7 +375,7 @@
                     return;
                 }
 
-                setLoading(true);
+                if (!isDataLoaded) setLoading(true); 
                 setError(null);
                 try {
                     const fetched = await fetchSheetData(id, sheet);
@@ -225,9 +389,10 @@
                     const unitCol = findColumnByCandidates(cols, UNIT_CANDIDATES);
 
                     if (!jamiaCol || !raqamCol) {
-                        setError("Sheet must contain at least 'Jamia Name' and 'Raqam' headers in the first row. Ensure header row exists and is readable.");
+                        setError("Sheet mein kam-az-kam 'Jamia Name' aur 'Raqam' ke headers pehli row mein hone chahiye. Confirm karein ki header row maujood hai aur padhni ja sakti hai.");
                         setData({ items: [] });
                         setLoading(false);
+                        setIsDataLoaded(true);
                         return;
                     }
 
@@ -242,89 +407,179 @@
                             const rank = rankRaw === null || rankRaw === undefined ? "" : String(rankRaw).trim();
                             const ustaz = ustazRaw === null || ustazRaw === undefined ? "" : String(ustazRaw).trim();
                             const jamia = jamiaRaw === null || jamiaRaw === undefined ? "" : String(jamiaRaw).trim();
-                            const unit = unitRaw === null || unitRaw === undefined ? "" : String(unitRaw).trim();
+                            
+                            const unit = parseNumericValue(unitRaw, true); 
+                            const n = parseNumericValue(raqamRaw);
 
-                            const n = raqamRaw === null || raqamRaw === undefined || String(raqamRaw).trim() === "" ? NaN : Number(String(raqamRaw).replace(/[^0-9.-]+/g, ""));
-
-                            return { __id: idx, rank, ustaz, jamia, unit, raqamRaw, __value: Number.isNaN(n) ? NaN : n };
+                            return { __id: idx, rank, ustaz, jamia, unit: Number.isNaN(unit) ? "" : unit, raqamRaw, __value: n };
                         })
                         .filter((x) => x.jamia !== "" && !Number.isNaN(x.__value));
 
                     parsed.sort((a, b) => b.__value - a.__value);
-
-                    const newTop = parsed.length ? parsed[0].__id : null;
-                    if (newTop !== null && newTop !== highlightKey) {
-                        setHighlightKey(parsed[0].__id);
+                    
+                    const newTopId = parsed.length ? parsed[0].__id : null;
+                    if (newTopId !== null && newTopId !== highlightKey) {
+                        setHighlightKey(newTopId);
                         setTimeout(() => setHighlightKey(null), 1200);
                     }
 
                     setData({ items: parsed });
                     setLoading(false);
+                    setIsDataLoaded(true);
                 } catch (err) {
                     console.error(err);
                     setError(err.message || String(err));
-                    setData({ items: [] });
+                    if (!isDataLoaded) setData({ items: [] }); 
                     setLoading(false);
+                    setIsDataLoaded(true);
                 }
             }
 
-            async function loadAllResults() {
-                setResultLoading(true);
-                setResultError(null);
-                const allWinnersByClass = {};
-                const sheetOptions = Object.keys(DEFAULT_SHEET_CONFIGS).filter(key => key !== "Result");
-
-                for (const opt of sheetOptions) {
+            // Function to load all class totals for overall ranking
+            async function loadOverallRank() {
+                // Only show loading indicator on the first load for overall rank
+                if (!isRankDataLoaded) setRankLoading(true);
+                setRankError(null);
+                const sheetOptions = options.filter(key => key !== "Result" && key !== "Overall Rank");
+                
+                const fetchPromises = sheetOptions.map(async (opt) => {
                     const cfg = DEFAULT_SHEET_CONFIGS[opt];
                     const id = overrides[opt] ?? cfg.id ?? "";
-                    if (!isValidSheetId(id)) continue;
+                    
+                    if (!isValidSheetId(id)) {
+                        return { className: opt, totalAmount: 0, totalUnit: 0, error: "Not Configured" };
+                    }
 
                     try {
                         const fetched = await fetchSheetData(id, cfg.sheet);
                         const cols = fetched.cols;
                         const rows = fetched.items;
 
-                        const ustazCol = findColumnByCandidates(cols, USTAZ_CANDIDATES);
-                        const jamiaCol = findColumnByCandidates(cols, JAMIA_CANDIDATES);
                         const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
                         const unitCol = findColumnByCandidates(cols, UNIT_CANDIDATES);
 
-                        if (!jamiaCol || !raqamCol) continue;
+                        if (!raqamCol) {
+                            return { className: opt, totalAmount: 0, totalUnit: 0, error: "Missing Raqam Column" };
+                        }
+                        
+                        let totalAmount = 0;
+                        let totalUnit = 0;
+
+                        rows.forEach((r) => {
+                            const raqamRaw = r[raqamCol];
+                            const unitRaw = unitCol ? r[unitCol] : null;
+
+                            const n = parseNumericValue(raqamRaw);
+                            const u = parseNumericValue(unitRaw, true);
+
+                            totalAmount += Number.isNaN(n) ? 0 : n;
+                            totalUnit += Number.isNaN(u) ? 0 : u;
+                        });
+                        
+                        return { className: opt, totalAmount, totalUnit, error: null };
+                    } catch (err) {
+                        console.error(`Error fetching data for ${opt}:`, err);
+                        return { className: opt, totalAmount: 0, totalUnit: 0, error: err.message };
+                    }
+                });
+
+                try {
+                    const results = await Promise.all(fetchPromises);
+                    
+                    const validResults = results.filter(r => r.totalAmount > 0 || r.totalUnit > 0 || !r.error || r.error === "Missing Raqam Column");
+                    
+                    // Calculate grand totals for the animated numbers (kept for logic, but not rendered)
+                    const grandTotalAmount = results.reduce((sum, r) => sum + r.totalAmount, 0);
+                    const grandTotalUnit = results.reduce((sum, r) => sum + r.totalUnit, 0);
+
+                    setOverallTotalAmount(grandTotalAmount);
+                    setOverallTotalUnit(grandTotalUnit);
+                    
+                    // Sort for the rank list
+                    validResults.sort((a, b) => b.totalAmount - a.totalAmount);
+
+                    setOverallRankData(validResults);
+                    setRankLoading(false);
+                    setIsRankDataLoaded(true);
+
+                } catch (e) {
+                    setRankError("Sabhi rank data ko process nahi kiya ja saka.");
+                    setRankLoading(false);
+                    setIsRankDataLoaded(true);
+                }
+            }
+
+
+            // Function to load all class results for the "Result" tab 
+            async function loadAllResults() {
+                setResultLoading(true);
+                setResultError(null);
+                const allWinnersByClass = {};
+                const sheetOptions = options.filter(key => key !== "Result" && key !== "Overall Rank");
+
+                const fetchPromises = sheetOptions.map(async (opt) => {
+                    const cfg = DEFAULT_SHEET_CONFIGS[opt];
+                    const id = overrides[opt] ?? cfg.id ?? "";
+                    
+                    if (!isValidSheetId(id)) return { className: opt, winners: [], error: "Not Configured" };
+
+                    try {
+                        const fetched = await fetchSheetData(id, cfg.sheet);
+                        const cols = fetched.cols;
+                        const rows = fetched.items;
+
+                        const jamiaCol = findColumnByCandidates(cols, JAMIA_CANDIDATES);
+                        const ustazCol = findColumnByCandidates(cols, USTAZ_CANDIDATES);
+                        const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
+
+                        if (!jamiaCol || !raqamCol) return { className: opt, winners: [], error: "Missing Columns" };
 
                         const parsed = rows
-                            .map((r) => {
-                                const ustazRaw = ustazCol ? r[ustazCol] : null;
+                            .map((r, idx) => {
                                 const jamiaRaw = r[jamiaCol];
+                                const ustazRaw = ustazCol ? r[ustazCol] : null;
                                 const raqamRaw = r[raqamCol];
-                                const unitRaw = unitCol ? r[unitCol] : null;
 
                                 const ustaz = ustazRaw === null || ustazRaw === undefined ? "" : String(ustazRaw).trim();
                                 const jamia = jamiaRaw === null || jamiaRaw === undefined ? "" : String(jamiaRaw).trim();
-                                const unit = unitRaw === null || unitRaw === undefined ? "" : String(unitRaw).trim();
-                                const n = raqamRaw === null || raqamRaw === undefined || String(raqamRaw).trim() === "" ? NaN : Number(String(raqamRaw).replace(/[^0-9.-]+/g, ""));
+                                const n = parseNumericValue(raqamRaw);
 
-                                return { ustaz, jamia, unit, __value: Number.isNaN(n) ? NaN : n };
+                                return { __id: idx, ustaz, jamia, __value: n };
                             })
                             .filter((x) => x.jamia !== "" && !Number.isNaN(x.__value));
 
                         parsed.sort((a, b) => b.__value - a.__value);
                         
-                        // Take the top 3 and add the class name
-                        const top3 = parsed.slice(0, 3).map(item => ({ ...item, className: opt }));
-                        allWinnersByClass[opt] = top3;
-
+                        return { className: opt, winners: parsed.slice(0, 3) };
                     } catch (err) {
-                        console.error(`Error fetching data for ${opt}:`, err);
-                        // Do not show an error to the user if one sheet fails, just continue
+                        console.error(`Error fetching results for ${opt}:`, err);
+                        return { className: opt, winners: [], error: err.message };
                     }
-                }
+                });
 
-                setResultData(allWinnersByClass);
-                setResultLoading(false);
+                try {
+                    const results = await Promise.all(fetchPromises);
+                    const winnersMap = {};
+                    results.forEach(r => {
+                        if (r.winners && r.winners.length > 0) {
+                             winnersMap[r.className] = r.winners;
+                        } else if (r.error && r.error.includes("Too many requests")) {
+                            setResultError(r.error);
+                        }
+                    });
+                    setResultData(winnersMap);
+
+                } catch (e) {
+                    setResultError("Sabhi results data ko process nahi kiya ja saka.");
+                } finally {
+                    setResultLoading(false);
+                }
             }
 
+            // Main effect hook for polling and countdown updates
             useEffect(() => {
                 if (active === "Result") {
+                    if (pollRef.current) clearInterval(pollRef.current);
                     if (countdown.expired) {
                         loadAllResults();
                     }
@@ -332,6 +587,11 @@
                         setCountdown(calculateTimeRemaining(targetDate));
                     }, 1000);
                     return () => clearInterval(timer);
+                } else if (active === "Overall Rank") { 
+                    if (pollRef.current) clearInterval(pollRef.current);
+                    loadOverallRank();
+                    pollRef.current = setInterval(loadOverallRank, POLL_INTERVAL_MS);
+                    return () => clearInterval(pollRef.current);
                 } else {
                     if (pollRef.current) clearInterval(pollRef.current);
                     const { id } = getActiveConfig();
@@ -341,16 +601,19 @@
                     } else {
                         setData({ items: [] });
                         setError(null);
+                        setLoading(false);
+                        setIsDataLoaded(true);
                     }
                     return () => clearInterval(pollRef.current);
                 }
             }, [active, overrides, countdown.expired]);
 
+            // Handler to set the new sheet ID/URL
             function handleSetSheetId(e) {
                 e.preventDefault();
                 const possible = parseSheetIdFromUrl(sheetInput);
                 if (!possible) {
-                    setError("Could not extract a valid Sheet ID from the input. Paste a full sheet URL or the sheet ID.");
+                    setError("Input se koi valid Sheet ID nahi nikali ja saki. Kripya poora sheet URL ya sirf Sheet ID paste karein.");
                     return;
                 }
                 setOverrides((prev) => ({ ...prev, [active]: possible }));
@@ -358,12 +621,18 @@
                 setError(null);
             }
             
+            // Dynamic labels based on active tab
             const ustazLabel = active === 'Takhassusat' ? 'Jamia Name' : 'Ustaz Name';
             const jamiaLabel = active === 'Takhassusat' ? 'Class' : 'Jamia Name';
 
+            // Check if full screen loader should be active (only on first load)
+            // For Overall Rank, we only want the loader on initial load (!isRankDataLoaded)
+            const showFullScreenLoader = (active !== "Overall Rank" && isLoading && !isDataLoaded) || 
+                                         (active === "Overall Rank" && isRankLoading && !isRankDataLoaded);
+
             return (
-                <div className="min-h-screen bg-gray-50 p-6 rounded-2xl">
-                    <div className="max-w-7xl mx-auto">
+                <div className="min-h-screen bg-gray-50">
+                    <div className="max-w-7xl mx-auto p-4 sm:p-6">
                         <header className="mb-6 text-center">
                             <h1 className="text-6xl sm:text-7xl font-['Bebas_Neue'] bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-indigo-600">
                                 TELETHONE 2025
@@ -373,22 +642,25 @@
 
                         <nav className="mb-4">
                             {/* Desktop Navigation */}
-                            <div className="hidden md:flex flex-wrap gap-2">
+                            <div className="hidden md:flex flex-wrap gap-2 justify-center">
                                 {options.map((opt) => {
                                     const cfg = DEFAULT_SHEET_CONFIGS[opt];
                                     const id = overrides[opt] ?? cfg.id ?? "";
-                                    const valid = isValidSheetId(id);
+                                    const valid = isValidSheetId(id) || opt === "Overall Rank" || opt === "Result"; 
                                     return (
                                         <button
                                             key={opt}
-                                            onClick={() => setActive(opt)}
+                                            onClick={() => {
+                                                setActive(opt);
+                                                if (overrides[opt]) setSheetInput(overrides[opt]);
+                                            }}
                                             className={`px-3 py-2 rounded-2xl font-medium text-sm shadow-sm focus:outline-none transition-transform transform hover:-translate-y-0.5 ${
-                                                active === opt ? "bg-sky-600 text-white shadow-lg" : "bg-white text-slate-700 border border-slate-200"
+                                                active === opt ? "bg-sky-600 text-white shadow-lg" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
                                             }`}
-                                            title={valid ? `Sheet configured (${id.slice(0, 8)}...)` : "Not configured — click and paste sheet URL/ID"}
+                                            title={opt !== "Overall Rank" && opt !== "Result" ? (valid ? `Sheet configured (${id.slice(0, 8)}...)` : "Not configured — click and paste sheet URL/ID") : opt}
                                         >
                                             <span className="inline-flex items-center gap-2">
-                                                <span className={`w-2 h-2 rounded-full ${valid ? "bg-emerald-400" : "bg-rose-400"}`} />
+                                                {opt !== "Overall Rank" && opt !== "Result" && <span className={`w-2 h-2 rounded-full ${valid ? "bg-emerald-400" : "bg-rose-400"}`} />}
                                                 <span>{opt}</span>
                                             </span>
                                         </button>
@@ -403,7 +675,7 @@
                                     id="class-select"
                                     value={active}
                                     onChange={(e) => setActive(e.target.value)}
-                                    className="block w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                                    className="block w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 shadow-sm"
                                 >
                                     {options.map((opt) => (
                                         <option key={opt} value={opt}>{opt}</option>
@@ -412,190 +684,297 @@
                             </div>
                         </nav>
                         
-                        <div className="flex flex-col items-center justify-center p-4 bg-purple-200 rounded-lg shadow-md mb-4">
-                            <h2 className="text-xl font-['Bowlby_One_SC'] text-purple-900 text-center">{active}</h2>
+                        <div className="flex flex-col items-center justify-center p-3 bg-indigo-50 rounded-xl shadow-md mb-4 border border-indigo-200">
+                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active}</h2>
                         </div>
 
-                        <main>
-                            {active === "Result" ? (
+                        <main className="relative">
+                            {/* Full Screen Initial Loader (Runs only on first load for Overall Rank) */}
+                            {showFullScreenLoader && (
+                                <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex justify-center items-center rounded-lg shadow-xl">
+                                    <div className="text-xl text-slate-500 flex flex-col items-center p-8 bg-white border rounded-xl shadow-lg">
+                                        <div className="loader w-10 h-10 mb-4 border-t-sky-500 border-4"></div>
+                                        {active === "Overall Rank" ? "Overall Ranking Load ho raha hai..." : "Live Data Load ho raha hai..."}
+                                    </div>
+                                </div>
+                            )}
+
+                            {active === "Overall Rank" ? (
+                                /* --- Overall Rank Tab View --- */
+                                <div className="bg-white border rounded-lg p-4 shadow-lg relative">
+                                    {/* Grand Totals Section has been removed as requested. */}
+                                    
+                                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 text-center border-b pb-2">All India Class Wise Rank</h2>
+                                    
+                                    {/* Background Loader for updates has been removed as requested. 
+                                        Data is now fetched silently in the background. */}
+                                    
+                                    {rankError && <div className="text-sm text-rose-600 mb-4 p-2 border border-rose-300 bg-rose-50 rounded-lg">Error: {rankError}</div>}
+
+                                    {/* Desktop Header */}
+                                    <div className="hidden md:grid grid-cols-12 items-center px-3 py-2 border-b text-sm font-semibold text-slate-700 bg-slate-50 rounded-t-lg">
+                                        <div className="col-span-1">Rank</div>
+                                        <div className="col-span-5">Class Name</div>
+                                        <div className="col-span-3 text-center">Total Unit</div>
+                                        <div className="col-span-3 text-right">Total Amount</div>
+                                    </div>
+
+                                    {/* Overall Rank List */}
+                                    <div className="space-y-3 mt-1">
+                                        {overallRankData.map((item, idx) => {
+                                            const isTop = idx === 0;
+                                            const medal = medalForIndex(idx);
+                                            
+                                            return (
+                                                <div 
+                                                    key={item.className} 
+                                                    className={`rank-item grid grid-cols-12 items-center p-3 md:p-4 rounded-xl shadow-sm border 
+                                                        ${isTop ? "bg-yellow-50 border-yellow-400 shadow-lg" : "bg-white border-slate-200 hover:shadow-md"}
+                                                    `}
+                                                >
+                                                    {/* Rank & Medal */}
+                                                    <div className="col-span-1 text-base md:text-2xl font-['Bebas_Neue'] text-center text-slate-800">
+                                                        {idx + 1}
+                                                    </div>
+                                                    
+                                                    {/* Class Name (Mobile: col-span-5, Desktop: col-span-5) */}
+                                                    <div className="col-span-5 md:ml-4 flex-grow truncate">
+                                                        <div className={`text-base md:text-lg font-bold ${isTop ? "text-yellow-700" : "text-slate-800"}`}>
+                                                            {item.className}
+                                                            <span className="ml-1 text-lg md:text-2xl">{medal}</span>
+                                                        </div>
+                                                        {item.error ? (
+                                                            <div className="text-xs text-rose-500 mt-1">
+                                                                Error: {item.error.includes("json") ? "Sheet Publish nahi hai ya Access nahi hai." : item.error}
+                                                            </div>
+                                                        ) : (
+                                                            <div className="hidden md:block text-xs text-slate-500">Class ka Rank</div>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    {/* Total Unit (Font changed, Centered) */}
+                                                    <div className={`col-span-3 text-center md:text-xl font-['Bebas_Neue'] text-indigo-500 tracking-wider`}>
+                                                        <span className="md:hidden text-xs text-slate-500 block mb-[-2px]">Unit</span>
+                                                        {item.totalUnit.toLocaleString()}
+                                                    </div>
+                                                    
+                                                    {/* Total Amount (Raqam) (Font changed) */}
+                                                    <div className={`col-span-3 text-right md:text-2xl font-['Bebas_Neue'] ${isTop ? "text-emerald-700" : "text-indigo-600"} tracking-wide min-w-[50px]`}>
+                                                        <span className="md:hidden text-xs text-slate-500 block mb-[-2px]">Amount</span>
+                                                        {item.totalAmount.toLocaleString()}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                        {overallRankData.length === 0 && !isRankLoading && (
+                                            <div className="text-center p-4 text-slate-500">Koi Data Available nahi hai ya Sheets Configured nahi hain.</div>
+                                        )}
+                                    </div>
+                                </div>
+                            ) : active === "Result" ? (
+                                /* --- Result Tab View (Translated to Roman Hindi) --- */
                                 <div className="bg-white border rounded-lg p-6 text-center shadow-lg">
                                     <h2 className="text-3xl font-extrabold text-slate-800 mb-4">Mini Telethon</h2>
                                     {countdown.expired ? (
                                         <>
-                                            <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announced!</div>
+                                            <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announce ho gaye hain!</div>
                                             {isResultLoading ? (
-                                                <div className="text-sm text-slate-500 animate-pulse">Loading data...</div>
+                                                <div className="text-sm text-slate-500 animate-pulse">Data Load ho raha hai...</div>
                                             ) : Object.keys(resultData).length > 0 ? (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                                     {Object.keys(resultData).map(className => (
-                                                        <div key={className} className="bg-gray-50 border border-gray-200 p-4 rounded-lg shadow-sm">
-                                                            <h3 className="text-xl font-bold text-slate-700 mb-3">{className} Winners</h3>
+                                                        <div key={className} className="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm">
+                                                            <h3 className="text-xl font-bold text-slate-700 mb-3 border-b pb-2">{className} Winners</h3>
                                                             <div className="space-y-2">
                                                                 {resultData[className].map((item, index) => (
-                                                                    <div key={index} className={`flex items-center p-2 rounded-md ${index === 0 ? "bg-yellow-200" : index === 1 ? "bg-gray-200" : "bg-gray-200"}`}>
-                                                                        <span className="text-2xl mr-2">{medalForIndex(index)}</span>
+                                                                    <div key={index} className={`flex items-center p-3 rounded-lg transition-colors ${index === 0 ? "bg-yellow-100 shadow-md" : index === 1 ? "bg-slate-100" : "bg-gray-100"}`}>
+                                                                        <span className="text-2xl mr-3">{medalForIndex(index)}</span>
                                                                         <div className="flex-grow text-left">
-                                                                            <p className="text-sm font-semibold text-slate-800">{item.jamia}</p>
+                                                                            <p className="text-base font-semibold text-slate-800">{item.jamia}</p>
                                                                             <p className="text-xs text-slate-500">{item.ustaz}</p>
-                                                                            <p className="text-xs text-slate-500">
-                                                                                <span className="font-semibold">Units:</span> {item.unit || "-"}
-                                                                            </p>
                                                                         </div>
-                                                                        <span className="font-bold text-lg text-slate-900">{item.__value.toLocaleString()}</span>
+                                                                        <span className="font-bold text-lg text-indigo-700">{item.__value.toLocaleString()}</span>
                                                                     </div>
                                                                 ))}
                                                                 {resultData[className].length === 0 && (
-                                                                    <div className="text-sm text-slate-500">No winners found for this class.</div>
+                                                                    <div className="text-sm text-slate-500 p-2">Is Class ke liye koi winner nahi mila.</div>
                                                                 )}
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <div className="text-sm text-slate-500 mt-2">No results found. Please try again later.</div>
+                                                <div className="text-sm text-slate-500 mt-2">Koi result nahi mila. Bara e Karam thodi der baad dobara check karein.</div>
                                             )}
                                         </>
                                     ) : (
                                         <>
-                                            <div className="text-xl font-medium text-slate-600 mb-6">Results will be announced soon!</div>
+                                            <div className="text-xl font-medium text-slate-600 mb-6">Results Jald Announce honge!</div>
                                             <div className="flex justify-center items-end gap-4 md:gap-8 font-bold">
-                                                <div className="flex flex-col items-center p-4 bg-sky-100 rounded-lg min-w-[70px] md:min-w-[100px]">
+                                                <div className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] md:min-w-[100px] shadow-lg">
                                                     <span className="text-4xl md:text-5xl text-sky-700">{String(countdown.days).padStart(2, '0')}</span>
-                                                    <span className="text-sm md:text-base text-slate-500">Days</span>
+                                                    <span className="text-sm md:text-base text-slate-500">Din</span>
                                                 </div>
-                                                <div className="flex flex-col items-center p-4 bg-sky-100 rounded-lg min-w-[70px] md:min-w-[100px]">
+                                                <div className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] md:min-w-[100px] shadow-lg">
                                                     <span className="text-4xl md:text-5xl text-sky-700">{String(countdown.hours).padStart(2, '0')}</span>
-                                                    <span className="text-sm md:text-base text-slate-500">Hours</span>
+                                                    <span className="text-sm md:text-base text-slate-500">Ghante</span>
                                                 </div>
-                                                <div className="flex flex-col items-center p-4 bg-sky-100 rounded-lg min-w-[70px] md:min-w-[100px]">
+                                                <div className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] md:min-w-[100px] shadow-lg">
                                                     <span className="text-4xl md:text-5xl text-sky-700">{String(countdown.minutes).padStart(2, '0')}</span>
-                                                    <span className="text-sm md:text-base text-slate-500">Minutes</span>
+                                                    <span className="text-sm md:text-base text-slate-500">Minute</span>
                                                 </div>
-                                                <div className="flex flex-col items-center p-4 bg-sky-100 rounded-lg min-w-[70px] md:min-w-[100px]">
+                                                <div className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] md:min-w-[100px] shadow-lg">
                                                     <span className="text-4xl md:text-5xl text-sky-700">{String(countdown.seconds).padStart(2, '0')}</span>
-                                                    <span className="text-sm md:text-base text-slate-500">Seconds</span>
+                                                    <span className="text-sm md:text-base text-slate-500">Second</span>
                                                 </div>
                                             </div>
                                         </>
                                     )}
                                 </div>
                             ) : (
-                                <div className="bg-white border rounded-lg overflow-hidden p-4">
+                                /* --- Live Data Tab View (Translated to Roman Hindi) --- */
+                                <div className="bg-white border rounded-lg p-4 shadow-lg relative">
+                                    {/* Background Loader for updates (Kept for individual class tabs) */}
+                                    {isLoading && isDataLoaded && (
+                                        <div className="loading-bg flex justify-center items-start pt-8">
+                                            <div className="flex items-center gap-2 text-indigo-600 p-2 bg-indigo-50 rounded-lg shadow-lg">
+                                                <div className="loader"></div>
+                                                <span className="text-sm font-medium">Data Update ho raha hai...</span>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {/* Sheet Configuration Area */}
                                     {(!isValidSheetId(getActiveConfig().id)) && (
-                                        <div className="mb-4">
-                                            <div className="text-sm text-slate-700 mb-2">No sheet configured for this option. Paste the Google Sheet URL or Sheet ID below to fetch live data.</div>
+                                        <div className="mb-4 p-4 border rounded-xl bg-red-50 border-red-200">
+                                            <div className="text-sm font-semibold text-red-700 mb-2">Sheet Configured nahi hai. Live data laane ke liye Google Sheet ka URL ya Sheet ID paste karein.</div>
                                             <form onSubmit={handleSetSheetId} className="flex gap-2">
                                                 <input
                                                     value={sheetInput}
                                                     onChange={(e) => setSheetInput(e.target.value)}
-                                                    placeholder="Enter full Google Sheet URL or Sheet ID"
-                                                    className="flex-1 px-3 py-2 border rounded-lg"
+                                                    placeholder="Poora Google Sheet URL ya Sheet ID daalein"
+                                                    className="flex-1 px-3 py-2 border rounded-lg focus:ring-sky-500 focus:border-sky-500"
                                                 />
-                                                <button type="submit" className="px-4 py-2 rounded-lg bg-sky-600 text-white">Set</button>
+                                                <button type="submit" className="px-4 py-2 rounded-lg bg-sky-600 text-white font-medium hover:bg-sky-700 transition">Set Sheet</button>
                                             </form>
-                                            <div className="text-xs text-slate-500 mt-2">Tip: Use the sheet's share link (or the /d/{id}/ URL). If you get permission errors, try File → Publish to web in Google Sheets.</div>
+                                            <div className="text-xs text-slate-500 mt-2">Salaah: Sheet ka Share Link (ya /d/{"{id}"}/ URL) use karein. Agar Permission error aata hai, toh Google Sheets mein File → Publish to web ka prayas karein.</div>
                                             {error && <div className="text-sm text-rose-600 mt-2">Error: {error}</div>}
                                         </div>
                                     )}
 
-                                    {error && isValidSheetId(getActiveConfig().id) && <div className="text-sm text-rose-600 mb-2">Error fetching data: {error}</div>}
+                                    {/* General Data Fetch Error */}
+                                    {error && isValidSheetId(getActiveConfig().id) && <div className="text-sm text-rose-600 mb-4 p-2 border border-rose-300 bg-rose-50 rounded-lg">Data laane mein Error: {error}</div>}
 
-                                    {/* Desktop Table */}
-                                    <div className="hidden md:block">
-                                        {/* Header row */}
-                                        <div className="grid grid-cols-12 items-center px-3 py-2 border-b text-sm font-semibold text-slate-700">
-                                            <div className="col-span-1">Rank</div>
-                                            <div className="col-span-2">{ustazLabel}</div>
-                                            <div className="col-span-6 text-center">{jamiaLabel}</div>
-                                            <div className="col-span-2 text-right">Amount</div>
-                                            <div className="col-span-1 text-right">Units</div>
+                                    {/* Items Container */}
+                                    <div className={`relative ${showFullScreenLoader ? 'opacity-50 pointer-events-none' : ''}`}>
+                                        
+                                        {/* Desktop Table */}
+                                        <div className="hidden md:block">
+                                            {/* Header row */}
+                                            <div className="grid grid-cols-12 items-center px-3 py-2 border-b text-sm font-semibold text-slate-700 bg-slate-50 rounded-t-lg">
+                                                <div className="col-span-1">Rank</div>
+                                                <div className="col-span-2">{ustazLabel}</div>
+                                                <div className="col-span-4 text-center">{jamiaLabel}</div>
+                                                <div className="col-span-3 text-right">Raqam</div>
+                                                <div className="col-span-2 text-right">Unit</div>
+                                            </div>
+
+                                            {/* Items */}
+                                            <div className="space-y-1 mt-1">
+                                                {data.items.map((it, idx) => {
+                                                    const isTop = idx === 0;
+                                                    const isSecond = idx === 1;
+                                                    const isThird = idx === 2;
+                                                    const medal = medalForIndex(idx);
+                                                    const highlight = it.__id === highlightKey;
+
+                                                    const styleClass = isTop
+                                                        ? "bg-yellow-50 border border-yellow-300 shadow-md"
+                                                        : isSecond
+                                                        ? "bg-sky-50 border border-sky-300"
+                                                        : isThird
+                                                        ? "bg-emerald-50 border border-emerald-300"
+                                                        : "bg-white border-transparent hover:bg-slate-50";
+
+                                                    return (
+                                                        <div key={it.__id} className={`grid grid-cols-12 items-center gap-4 p-3 rounded-lg transition-all duration-600 transform ${styleClass} ${highlight ? "highlight-pulse" : ""}`} style={{ willChange: "transform, box-shadow" }}>
+                                                            <div className="col-span-1 flex items-center justify-center font-bold text-base">{idx + 1}</div>
+
+                                                            <div className={`col-span-2 text-left ${isTop || isSecond || isThird ? "text-base font-semibold" : "text-sm font-medium text-slate-600"}`}>
+                                                                {active === 'Takhassusat' ? (it.jamia || "-") : (it.ustaz || "-")}
+                                                            </div>
+
+                                                            <div className={`col-span-4 text-center ${isTop ? "text-xl font-extrabold text-slate-900" : isSecond ? "text-lg font-bold" : isThird ? "text-lg font-semibold" : "text-base font-medium"}`}>
+                                                                <span className="inline-flex items-center gap-2">{medal}<span>{active === 'Takhassusat' ? it.ustaz : it.jamia}</span></span>
+                                                            </div>
+
+                                                            <div className={`col-span-3 text-right ${isTop ? "text-emerald-600" : isSecond ? "text-sky-600" : isThird ? "text-yellow-600" : "text-slate-700"} text-xl font-bold`}>
+                                                                {it.__value.toLocaleString()}
+                                                            </div>
+
+                                                            <div className="col-span-2 text-right text-base font-bold text-indigo-600">{it.unit || "-"}</div>
+                                                        </div>
+                                                    );
+                                                })}
+
+                                                {(!data.items || data.items.length === 0) && (
+                                                    <div className="text-sm text-slate-500 p-3 text-center">Koi valid row nahi mili (Confirm karein ki 'Jamia Name' aur 'Raqam' column maujood hain aur 'Raqam' value numeric hain).</div>
+                                                )}
+                                            </div>
                                         </div>
 
-                                        {/* Items */}
-                                        <div className="space-y-3 mt-3">
+                                        {/* Mobile List View */}
+                                        <div className="md:hidden space-y-3">
                                             {data.items.map((it, idx) => {
                                                 const isTop = idx === 0;
                                                 const isSecond = idx === 1;
                                                 const isThird = idx === 2;
                                                 const medal = medalForIndex(idx);
                                                 const highlight = it.__id === highlightKey;
-
                                                 const styleClass = isTop
-                                                    ? "bg-yellow-50 border border-yellow-200"
-                                                    : isSecond
-                                                    ? "bg-sky-50 border border-sky-200"
-                                                    : isThird
-                                                    ? "bg-emerald-50 border border-emerald-200"
-                                                    : "bg-white border-transparent";
-
+                                                        ? "bg-yellow-50 border border-yellow-300 shadow-md"
+                                                        : isSecond
+                                                        ? "bg-sky-50 border border-sky-300"
+                                                        : isThird
+                                                        ? "bg-emerald-50 border border-emerald-300"
+                                                        : "bg-white border border-slate-100";
+                                                
                                                 return (
-                                                    <div key={it.__id} className={`grid grid-cols-12 items-center gap-4 p-3 rounded-lg transition-all duration-600 transform ${styleClass} ${highlight ? "highlight-pulse" : ""}`} style={{ willChange: "transform, box-shadow" }}>
-                                                        <div className="col-span-1 flex items-center justify-center font-bold text-base">{idx + 1}</div>
-
-                                                        <div className={`col-span-2 text-left ${isTop || isSecond || isThird ? "text-base font-semibold" : "text-sm font-medium"}`}>
-                                                            {active === 'Takhassusat' ? (it.jamia || "-") : (it.ustaz || "-")}
+                                                    <div key={it.__id} className={`p-4 rounded-lg shadow-sm transition-all duration-600 transform ${styleClass} ${highlight ? "highlight-pulse" : ""}`} style={{ willChange: "transform, box-shadow" }}>
+                                                        <div className="flex items-center justify-between border-b pb-2 mb-2">
+                                                            <div className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                                                <span>{idx + 1}.</span>
+                                                                <span className="truncate max-w-[200px]">{active === 'Takhassusat' ? it.ustaz : it.jamia}</span>
+                                                                <span>{medal}</span>
+                                                            </div>
+                                                            <div className={`text-xl font-bold text-right ml-auto min-w-0 break-all ${isTop ? "text-emerald-600" : isSecond ? "text-sky-600" : isThird ? "text-yellow-600" : "text-slate-700"}`}>
+                                                                {it.__value.toLocaleString()}
+                                                            </div>
                                                         </div>
-
-                                                        <div className={`col-span-6 text-center ${isTop ? "text-xl font-extrabold" : isSecond ? "text-lg font-bold" : isThird ? "text-lg font-semibold" : "text-base font-medium"}`}>
-                                                            <span className="inline-flex items-center gap-2">{medal}<span>{active === 'Takhassusat' ? it.ustaz : it.jamia}</span></span>
+                                                        <div className="text-sm text-slate-600 flex justify-between">
+                                                            <div className="truncate mr-4">
+                                                                <span className="font-semibold">{ustazLabel}:</span> 
+                                                                <span className="text-slate-700 font-medium">
+                                                                    {active === 'Takhassusat' ? (it.jamia || "-") : (it.ustaz || "-")}
+                                                                </span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="font-semibold">Unit:</span> <span className={`font-bold text-indigo-600`}>{it.unit || "-"}</span>
+                                                            </div>
                                                         </div>
-
-                                                        <div className={`col-span-2 text-right ${isTop ? "text-emerald-600" : isSecond ? "text-sky-600" : isThird ? "text-yellow-600" : "text-slate-700"} text-xl font-bold`}>
-                                                            {it.__value.toLocaleString()}
-                                                        </div>
-
-                                                        <div className="col-span-1 text-right text-sm font-bold">{it.unit || "-"}</div>
                                                     </div>
                                                 );
                                             })}
 
-                                            {(!data.items || data.items.length === 0) && <div className="text-sm text-slate-500 p-3">No valid rows found (ensure 'Jamia Name' and 'Raqam' columns exist and 'Raqam' values are numeric).</div>}
+                                            {(!data.items || data.items.length === 0) && (
+                                                <div className="text-sm text-slate-500 p-3 text-center">Koi valid row nahi mili (Confirm karein ki 'Jamia Name' aur 'Raqam' column maujood hain aur 'Raqam' value numeric hain).</div>
+                                            )}
                                         </div>
-                                    </div>
-
-                                    {/* Mobile List View */}
-                                    <div className="md:hidden space-y-4">
-                                        {data.items.map((it, idx) => {
-                                            const isTop = idx === 0;
-                                            const isSecond = idx === 1;
-                                            const isThird = idx === 2;
-                                            const medal = medalForIndex(idx);
-                                            const highlight = it.__id === highlightKey;
-                                            const styleClass = isTop
-                                                    ? "bg-yellow-50 border border-yellow-200"
-                                                    : isSecond
-                                                    ? "bg-sky-50 border border-sky-200"
-                                                    : isThird
-                                                    ? "bg-emerald-50 border border-emerald-200"
-                                                    : "bg-white border-transparent";
-                                            
-                                            return (
-                                                <div key={it.__id} className={`p-4 rounded-lg shadow-sm transition-all duration-600 transform ${styleClass} ${highlight ? "highlight-pulse" : ""}`} style={{ willChange: "transform, box-shadow" }}>
-                                                    <div className="flex flex-wrap items-center justify-between">
-                                                        <div className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                                            <span>{idx + 1}.</span>
-                                                            <span>{active === 'Takhassusat' ? it.ustaz : it.jamia}</span>
-                                                            <span>{medal}</span>
-                                                        </div>
-                                                        <div className={`text-xl font-bold text-right text-slate-700 ${isTop ? "text-emerald-600" : isSecond ? "text-sky-600" : isThird ? "text-yellow-600" : ""} ml-auto min-w-0 break-all`}>
-                                                            {it.__value.toLocaleString()}
-                                                        </div>
-                                                    </div>
-                                                    <div className="mt-2 text-sm text-slate-600 flex justify-between">
-                                                        <div><span className="font-semibold">{ustazLabel}:</span> {active === 'Takhassusat' ? (it.jamia || "-") : (it.ustaz || "-")}</div>
-                                                        <div><span className="font-semibold">Units:</span> <span className={`font-bold`}>{it.unit || "-"}</span></div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-
-                                        {(!data.items || data.items.length === 0) && <div className="text-sm text-slate-500 p-3">No valid rows found (ensure 'Jamia Name' and 'Raqam' columns exist and 'Raqam' values are numeric).</div>}
                                     </div>
                                 </div>
                             )}
                         </main>
 
-                        <footer className="mt-8 text-xs text-slate-500">Made with ❤️ — Majlis Talimi Umoor India</footer>
+                        <footer className="mt-8 text-xs text-slate-500 text-center">Made with ❤️ — Majlis Talimi Umoor India</footer>
                     </div>
                 </div>
             );
@@ -612,7 +991,3 @@
 
 </body>
 </html>
-
-
-
-
