@@ -86,10 +86,18 @@
             return '₹ ' + new Intl.NumberFormat('en-IN').format(Math.round(amount));
         };
 
-        // Formatter for Unit
+        // Formatter for Unit (Used for individual class units, not Overall Rank)
         const formatUnit = (unit) => {
             return new Intl.NumberFormat('en-IN').format(Math.round(unit));
         };
+        
+        // Formatter for Overall Rank Units (Amount / 7000, fixed to 1 decimal place)
+        const formatOverallUnit = (amount) => {
+             if (typeof amount !== 'number' || amount < 0) return "0.0";
+             const units = amount / 7000;
+             return units.toFixed(1); // Show exactly 1 decimal place
+        }
+
 
         // Component for smooth number animation (Kept for other total numbers if needed, but not used in Overall Rank now)
         const AnimatedNumber = ({ value, duration = 1500, formatter }) => {
@@ -166,6 +174,7 @@
 
         const POLL_INTERVAL_MS = 5000;
         const LOCALSTORAGE_KEY = "telethone_sheet_overrides_enhanced_live";
+        const UNIT_DIVISOR = 7000; // New constant for unit calculation
 
         // Utility function to extract the Google Sheet ID from various URLs or raw input
         function parseSheetIdFromUrl(input) {
@@ -447,6 +456,7 @@
                     const id = overrides[opt] ?? cfg.id ?? "";
                     
                     if (!isValidSheetId(id)) {
+                        // For overall rank calculation, if a sheet is not configured, its contribution is 0
                         return { className: opt, totalAmount: 0, totalUnit: 0, error: "Not Configured" };
                     }
 
@@ -463,20 +473,23 @@
                         }
                         
                         let totalAmount = 0;
-                        let totalUnit = 0;
+                        let totalUnit = 0; // This is not used now, as unit is calculated from amount
 
                         rows.forEach((r) => {
                             const raqamRaw = r[raqamCol];
-                            const unitRaw = unitCol ? r[unitCol] : null;
+                            // const unitRaw = unitCol ? r[unitCol] : null; // Original unit column is ignored now
 
                             const n = parseNumericValue(raqamRaw);
-                            const u = parseNumericValue(unitRaw, true);
+                            // const u = parseNumericValue(unitRaw, true); // Original unit value is ignored now
 
                             totalAmount += Number.isNaN(n) ? 0 : n;
-                            totalUnit += Number.isNaN(u) ? 0 : u;
+                            // totalUnit += Number.isNaN(u) ? 0 : u; // Original unit calculation is ignored now
                         });
                         
-                        return { className: opt, totalAmount, totalUnit, error: null };
+                        // NEW LOGIC: Calculate unit based on amount
+                        const calculatedUnit = totalAmount / UNIT_DIVISOR;
+                        
+                        return { className: opt, totalAmount, totalUnit: calculatedUnit, error: null };
                     } catch (err) {
                         console.error(`Error fetching data for ${opt}:`, err);
                         return { className: opt, totalAmount: 0, totalUnit: 0, error: err.message };
@@ -486,17 +499,24 @@
                 try {
                     const results = await Promise.all(fetchPromises);
                     
-                    const validResults = results.filter(r => r.totalAmount > 0 || r.totalUnit > 0 || !r.error || r.error === "Missing Raqam Column");
+                    // Filter out rows where Total Amount is 0 AND Total Unit is 0 AND it's not a missing column error
+                    const validResults = results.filter(r => r.totalAmount > 0 || r.totalUnit > 0 || (r.error && r.error.includes("Missing Raqam Column")));
                     
                     // Calculate grand totals for the animated numbers (kept for logic, but not rendered)
                     const grandTotalAmount = results.reduce((sum, r) => sum + r.totalAmount, 0);
-                    const grandTotalUnit = results.reduce((sum, r) => sum + r.totalUnit, 0);
+                    const grandTotalUnit = results.reduce((sum, r) => sum + r.totalUnit, 0); // This total unit is now the sum of calculated units
 
                     setOverallTotalAmount(grandTotalAmount);
                     setOverallTotalUnit(grandTotalUnit);
                     
                     // Sort for the rank list
-                    validResults.sort((a, b) => b.totalAmount - a.totalAmount);
+                    // Sort primarily by totalAmount, secondarily by calculated totalUnit
+                    validResults.sort((a, b) => {
+                        if (b.totalAmount !== a.totalAmount) {
+                            return b.totalAmount - a.totalAmount;
+                        }
+                        return b.totalUnit - a.totalUnit;
+                    });
 
                     setOverallRankData(validResults);
                     setRankLoading(false);
@@ -590,6 +610,7 @@
                 } else if (active === "Overall Rank") { 
                     if (pollRef.current) clearInterval(pollRef.current);
                     loadOverallRank();
+                    // Poll silently in the background
                     pollRef.current = setInterval(loadOverallRank, POLL_INTERVAL_MS);
                     return () => clearInterval(pollRef.current);
                 } else {
@@ -704,7 +725,7 @@
                                 <div className="bg-white border rounded-lg p-4 shadow-lg relative">
                                     {/* Grand Totals Section has been removed as requested. */}
                                     
-                                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 text-center border-b pb-2">All India Class Wise Rank</h2>
+                                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 text-center border-b pb-2">Sabhi Class Ki Rank</h2>
                                     
                                     {/* Background Loader for updates has been removed as requested. 
                                         Data is now fetched silently in the background. */}
@@ -715,7 +736,7 @@
                                     <div className="hidden md:grid grid-cols-12 items-center px-3 py-2 border-b text-sm font-semibold text-slate-700 bg-slate-50 rounded-t-lg">
                                         <div className="col-span-1">Rank</div>
                                         <div className="col-span-5">Class Name</div>
-                                        <div className="col-span-3 text-center">Total Unit</div>
+                                        <div className="col-span-3 text-center">Calculated Unit</div>
                                         <div className="col-span-3 text-right">Total Amount</div>
                                     </div>
 
@@ -724,6 +745,9 @@
                                         {overallRankData.map((item, idx) => {
                                             const isTop = idx === 0;
                                             const medal = medalForIndex(idx);
+                                            
+                                            // Format the calculated unit to 1 decimal place
+                                            const formattedUnit = formatOverallUnit(item.totalAmount);
                                             
                                             return (
                                                 <div 
@@ -752,10 +776,10 @@
                                                         )}
                                                     </div>
                                                     
-                                                    {/* Total Unit (Font changed, Centered) */}
+                                                    {/* Calculated Unit (Font changed, Centered) */}
                                                     <div className={`col-span-3 text-center md:text-xl font-['Bebas_Neue'] text-indigo-500 tracking-wider`}>
                                                         <span className="md:hidden text-xs text-slate-500 block mb-[-2px]">Unit</span>
-                                                        {item.totalUnit.toLocaleString()}
+                                                        {formattedUnit}
                                                     </div>
                                                     
                                                     {/* Total Amount (Raqam) (Font changed) */}
@@ -804,7 +828,7 @@
                                                     ))}
                                                 </div>
                                             ) : (
-                                                <div className="text-sm text-slate-500 mt-2">Koi result nahi mila. Bara e Karam thodi der baad dobara check karein.</div>
+                                                <div className="text-sm text-slate-500 mt-2">Koi result nahi mila. Kripya thodi der baad dobara check karein.</div>
                                             )}
                                         </>
                                     ) : (
