@@ -634,7 +634,7 @@
                 e.preventDefault();
                 const possible = parseSheetIdFromUrl(sheetInput);
                 if (!possible) {
-                    setError("Input se koi valid Sheet ID nahi nikali ja saki. Kripya poora sheet URL ya sirf Sheet ID paste karein.");
+                    setError("Input se koi valid Sheet ID nahi nikali ja saki. Barae Karam poora sheet URL ya sirf Sheet ID paste karein.");
                     return;
                 }
                 setOverrides((prev) => ({ ...prev, [active]: possible }));
@@ -725,7 +725,7 @@
                                 <div className="bg-white border rounded-lg p-4 shadow-lg relative">
                                     {/* Grand Totals Section has been removed as requested. */}
                                     
-                                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 text-center border-b pb-2">Sabhi Class Ki Rank</h2>
+                                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 text-center border-b pb-2">All India Class Wise Rank</h2>
                                     
                                     {/* Background Loader for updates has been removed as requested. 
                                         Data is now fetched silently in the background. */}
@@ -1015,3 +1015,4 @@
 
 </body>
 </html>
+
