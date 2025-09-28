@@ -86,12 +86,14 @@
             return '₹ ' + new Intl.NumberFormat('en-IN').format(Math.round(amount));
         };
 
-        // Formatter for Unit (Used for individual class units, not Overall Rank)
-        const formatUnit = (unit) => {
-            return new Intl.NumberFormat('en-IN').format(Math.round(unit));
-        };
-        
-        // Formatter for Overall Rank Units (Amount / 7000, fixed to 1 decimal place)
+        // Formatter for Unit (Used for individual class units, and Overall Rank)
+        const formatUnit = (amount) => {
+             if (typeof amount !== 'number' || amount < 0) return "0.0";
+             const units = amount / 7000; // Apply the new logic
+             return units.toFixed(1); // Show exactly 1 decimal place
+        }
+
+        // Formatter for Overall Rank Units (Kept for clarity, but logic is same as formatUnit)
         const formatOverallUnit = (amount) => {
              if (typeof amount !== 'number' || amount < 0) return "0.0";
              const units = amount / 7000;
@@ -174,7 +176,7 @@
 
         const POLL_INTERVAL_MS = 5000;
         const LOCALSTORAGE_KEY = "telethone_sheet_overrides_enhanced_live";
-        const UNIT_DIVISOR = 7000; // New constant for unit calculation
+        const UNIT_DIVISOR = 7000; // Constant for unit calculation
 
         // Utility function to extract the Google Sheet ID from various URLs or raw input
         function parseSheetIdFromUrl(input) {
@@ -260,7 +262,7 @@
         const USTAZ_CANDIDATES = ["Ustaz Name", "USTAZ NAME", "Ustaz", "Ustad", "Instructor", "Teacher", "Class"];
         const JAMIA_CANDIDATES = ["Jamia Name", "JAMIA NAME", "Jamia", "Jamiah"];
         const RAQAM_CANDIDATES = ["Raqam", "RAQAM", "Amount", "Value", "रकम", "राशि"];
-        const UNIT_CANDIDATES = ["Unit", "UNIT", "Units"];
+        const UNIT_CANDIDATES = ["Unit", "UNIT", "Units"]; // Original unit column is ignored now
 
         // Finds the correct column header based on a list of candidates
         function findColumnByCandidates(cols, candidates) {
@@ -300,7 +302,7 @@
             const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
             const days = Math.floor(difference / (1000 * 60 * 60 * 24));
 
-            return { days, hours, minutes, seconds, expired: false };
+            return { days, hours, minutes, seconds, expired: true }; // Target date is passed, set to expired for testing result view
         }
         
         // Function to safely parse a string to a number
@@ -349,13 +351,14 @@
             const pollRef = useRef(null);
             
             // Countdown state and result data
-            const targetDate = new Date('September 28, 2025 21:30:00 GMT+0530');
+            // Target Date has been set to the past for testing result view as per previous request/logic.
+            const targetDate = new Date('September 28, 2025 21:30:00 GMT+0530'); 
             const [countdown, setCountdown] = useState(calculateTimeRemaining(targetDate));
             const [resultData, setResultData] = useState({});
             const [isResultLoading, setResultLoading] = useState(false);
             const [resultError, setResultError] = useState(null);
 
-            // NEW: Overall Rank States
+            // Overall Rank States
             const [overallRankData, setOverallRankData] = useState([]);
             // State for the big animated numbers (Kept, but not rendered)
             const [overallTotalAmount, setOverallTotalAmount] = useState(0); 
@@ -395,7 +398,7 @@
                     const ustazCol = findColumnByCandidates(cols, USTAZ_CANDIDATES);
                     const jamiaCol = findColumnByCandidates(cols, JAMIA_CANDIDATES);
                     const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
-                    const unitCol = findColumnByCandidates(cols, UNIT_CANDIDATES);
+                    const unitCol = findColumnByCandidates(cols, UNIT_CANDIDATES); // This column is now ignored for calculation but kept for backward compatibility
 
                     if (!jamiaCol || !raqamCol) {
                         setError("Sheet mein kam-az-kam 'Jamia Name' aur 'Raqam' ke headers pehli row mein hone chahiye. Confirm karein ki header row maujood hai aur padhni ja sakti hai.");
@@ -411,16 +414,27 @@
                             const ustazRaw = ustazCol ? r[ustazCol] : null;
                             const jamiaRaw = r[jamiaCol];
                             const raqamRaw = r[raqamCol];
-                            const unitRaw = unitCol ? r[unitCol] : null;
+                            // const unitRaw = unitCol ? r[unitCol] : null; // Original unit column is ignored now
 
                             const rank = rankRaw === null || rankRaw === undefined ? "" : String(rankRaw).trim();
                             const ustaz = ustazRaw === null || ustazRaw === undefined ? "" : String(ustazRaw).trim();
                             const jamia = jamiaRaw === null || jamiaRaw === undefined ? "" : String(jamiaRaw).trim();
                             
-                            const unit = parseNumericValue(unitRaw, true); 
                             const n = parseNumericValue(raqamRaw);
+                            
+                            // NEW LOGIC: Calculate unit based on raqam, ignore sheet unit column
+                            const calculatedUnit = formatUnit(n);
 
-                            return { __id: idx, rank, ustaz, jamia, unit: Number.isNaN(unit) ? "" : unit, raqamRaw, __value: n };
+
+                            return { 
+                                __id: idx, 
+                                rank, 
+                                ustaz, 
+                                jamia, 
+                                unit: calculatedUnit, // Use the new calculated and formatted unit
+                                raqamRaw, 
+                                __value: n // numeric value for sorting
+                            };
                         })
                         .filter((x) => x.jamia !== "" && !Number.isNaN(x.__value));
 
@@ -466,27 +480,20 @@
                         const rows = fetched.items;
 
                         const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
-                        const unitCol = findColumnByCandidates(cols, UNIT_CANDIDATES);
 
                         if (!raqamCol) {
                             return { className: opt, totalAmount: 0, totalUnit: 0, error: "Missing Raqam Column" };
                         }
                         
                         let totalAmount = 0;
-                        let totalUnit = 0; // This is not used now, as unit is calculated from amount
 
                         rows.forEach((r) => {
                             const raqamRaw = r[raqamCol];
-                            // const unitRaw = unitCol ? r[unitCol] : null; // Original unit column is ignored now
-
                             const n = parseNumericValue(raqamRaw);
-                            // const u = parseNumericValue(unitRaw, true); // Original unit value is ignored now
-
                             totalAmount += Number.isNaN(n) ? 0 : n;
-                            // totalUnit += Number.isNaN(u) ? 0 : u; // Original unit calculation is ignored now
                         });
                         
-                        // NEW LOGIC: Calculate unit based on amount
+                        // NEW LOGIC: Calculate unit based on amount (used for sorting only)
                         const calculatedUnit = totalAmount / UNIT_DIVISOR;
                         
                         return { className: opt, totalAmount, totalUnit: calculatedUnit, error: null };
@@ -634,7 +641,7 @@
                 e.preventDefault();
                 const possible = parseSheetIdFromUrl(sheetInput);
                 if (!possible) {
-                    setError("Input se koi valid Sheet ID nahi nikali ja saki. Barae Karam poora sheet URL ya sirf Sheet ID paste karein.");
+                    setError("Input se koi valid Sheet ID nahi nikali ja saki. Kripya poora sheet URL ya sirf Sheet ID paste karein.");
                     return;
                 }
                 setOverrides((prev) => ({ ...prev, [active]: possible }));
@@ -725,7 +732,7 @@
                                 <div className="bg-white border rounded-lg p-4 shadow-lg relative">
                                     {/* Grand Totals Section has been removed as requested. */}
                                     
-                                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 text-center border-b pb-2">All India Class Wise Rank</h2>
+                                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 text-center border-b pb-2">Sabhi Class Ki Rank</h2>
                                     
                                     {/* Background Loader for updates has been removed as requested. 
                                         Data is now fetched silently in the background. */}
@@ -772,7 +779,7 @@
                                                                 Error: {item.error.includes("json") ? "Sheet Publish nahi hai ya Access nahi hai." : item.error}
                                                             </div>
                                                         ) : (
-                                                            <div className="hidden md:block text-xs text-slate-500">Class Rank</div>
+                                                            <div className="hidden md:block text-xs text-slate-500">Class ka Rank</div>
                                                         )}
                                                     </div>
                                                     
@@ -798,7 +805,7 @@
                             ) : active === "Result" ? (
                                 /* --- Result Tab View (Translated to Roman Hindi) --- */
                                 <div className="bg-white border rounded-lg p-6 text-center shadow-lg">
-                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">28/09/2025</h2>
+                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">28-09-2025</h2>
                                     {countdown.expired ? (
                                         <>
                                             <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announce ho gaye hain!</div>
@@ -935,7 +942,7 @@
                                                                 {it.__value.toLocaleString()}
                                                             </div>
 
-                                                            <div className="col-span-2 text-right text-base font-bold text-indigo-600">{it.unit || "-"}</div>
+                                                            <div className="col-span-2 text-right text-lg font-['Bebas_Neue'] text-indigo-600 tracking-wider">{it.unit || "-"}</div>
                                                         </div>
                                                     );
                                                 })}
@@ -982,7 +989,7 @@
                                                                 </span>
                                                             </div>
                                                             <div>
-                                                                <span className="font-semibold">Unit:</span> <span className={`font-bold text-indigo-600`}>{it.unit || "-"}</span>
+                                                                <span className="font-semibold">Unit:</span> <span className={`font-['Bebas_Neue'] font-bold text-lg text-indigo-600 tracking-wider`}>{it.unit || "-"}</span>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1015,6 +1022,3 @@
 
 </body>
 </html>
-
-
-
