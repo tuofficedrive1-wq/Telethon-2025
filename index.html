@@ -740,7 +740,7 @@
                                 <div className="bg-white border rounded-lg p-4 shadow-lg relative">
                                     {/* Grand Totals Section has been removed as requested. */}
                                     
-                                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 text-center border-b pb-2">Sabhi Class Ki Rank</h2>
+                                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 text-center border-b pb-2">All India Classic Rank</h2>
                                     
                                     {/* Background Loader for updates has been removed as requested. 
                                         Data is now fetched silently in the background. */}
@@ -787,7 +787,7 @@
                                                                 Error: {item.error.includes("json") ? "Sheet Publish nahi hai ya Access nahi hai." : item.error}
                                                             </div>
                                                         ) : (
-                                                            <div className="hidden md:block text-xs text-slate-500">Class ka Rank</div>
+                                                            <div className="hidden md:block text-xs text-slate-500">Class Rank</div>
                                                         )}
                                                     </div>
                                                     
@@ -813,7 +813,7 @@
                             ) : active === "Result" ? (
                                 /* --- Result Tab View (Translated to Roman Hindi) --- */
                                 <div className="bg-white border rounded-lg p-6 text-center shadow-lg">
-                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">Mini Telethon</h2>
+                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">28-09-2025</h2>
                                     {countdown.expired ? (
                                         <>
                                             <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announce ho gaye hain!</div>
@@ -848,7 +848,7 @@
                                         </>
                                     ) : (
                                         <>
-                                            <div className="text-xl font-medium text-slate-600 mb-6">Results Jald Announce honge!</div>
+                                            <div className="text-xl font-medium text-slate-600 mb-6">Results 9:30pm Par Announce honge!</div>
                                             <div className="flex justify-center items-end gap-4 md:gap-8 font-bold">
                                                 <div className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] md:min-w-[100px] shadow-lg">
                                                     <span className="text-4xl md:text-5xl text-sky-700">{String(countdown.days).padStart(2, '0')}</span>
@@ -1030,3 +1030,4 @@
 
 </body>
 </html>
+
