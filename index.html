@@ -302,7 +302,8 @@
             const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
             const days = Math.floor(difference / (1000 * 60 * 60 * 24));
 
-            return { days, hours, minutes, seconds, expired: true }; // Target date is passed, set to expired for testing result view
+            // BUG FIX: Set expired to false if time is remaining
+            return { days, hours, minutes, seconds, expired: false }; 
         }
         
         // Function to safely parse a string to a number
@@ -607,13 +608,20 @@
             useEffect(() => {
                 if (active === "Result") {
                     if (pollRef.current) clearInterval(pollRef.current);
+                    
+                    // Only start loading results if the countdown has expired
                     if (countdown.expired) {
                         loadAllResults();
                     }
+
+                    // Set up the 1-second interval for countdown update
                     const timer = setInterval(() => {
                         setCountdown(calculateTimeRemaining(targetDate));
                     }, 1000);
+                    
+                    // Clean up the interval when the component unmounts or active changes
                     return () => clearInterval(timer);
+                    
                 } else if (active === "Overall Rank") { 
                     if (pollRef.current) clearInterval(pollRef.current);
                     loadOverallRank();
@@ -634,7 +642,7 @@
                     }
                     return () => clearInterval(pollRef.current);
                 }
-            }, [active, overrides, countdown.expired]);
+            }, [active, overrides, countdown.expired]); // Re-run effect if active changes or expired state changes
 
             // Handler to set the new sheet ID/URL
             function handleSetSheetId(e) {
@@ -805,7 +813,7 @@
                             ) : active === "Result" ? (
                                 /* --- Result Tab View (Translated to Roman Hindi) --- */
                                 <div className="bg-white border rounded-lg p-6 text-center shadow-lg">
-                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">28-09-2025</h2>
+                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">Mini Telethon</h2>
                                     {countdown.expired ? (
                                         <>
                                             <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announce ho gaye hain!</div>
@@ -840,7 +848,7 @@
                                         </>
                                     ) : (
                                         <>
-                                            <div className="text-xl font-medium text-slate-600 mb-6">Results 9:30pm Par Announce honge!</div>
+                                            <div className="text-xl font-medium text-slate-600 mb-6">Results Jald Announce honge!</div>
                                             <div className="flex justify-center items-end gap-4 md:gap-8 font-bold">
                                                 <div className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] md:min-w-[100px] shadow-lg">
                                                     <span className="text-4xl md:text-5xl text-sky-700">{String(countdown.days).padStart(2, '0')}</span>
