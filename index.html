@@ -353,7 +353,7 @@
             
             // Countdown state and result data
             // Target Date has been set to the past for testing result view as per previous request/logic.
-            const targetDate = new Date('September 28, 2025 21:30:00 GMT+0530'); 
+            const targetDate = new Date('September 29, 2025 21:30:00 GMT+0530'); 
             const [countdown, setCountdown] = useState(calculateTimeRemaining(targetDate));
             const [resultData, setResultData] = useState({});
             const [isResultLoading, setResultLoading] = useState(false);
@@ -813,7 +813,7 @@
                             ) : active === "Result" ? (
                                 /* --- Result Tab View (Translated to Roman Hindi) --- */
                                 <div className="bg-white border rounded-lg p-6 text-center shadow-lg">
-                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">28-09-2025</h2>
+                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">29-09-2025</h2>
                                     {countdown.expired ? (
                                         <>
                                             <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announce ho gaye hain!</div>
@@ -1030,4 +1030,5 @@
 
 </body>
 </html>
+
 
