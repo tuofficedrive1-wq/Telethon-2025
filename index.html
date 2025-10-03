@@ -353,7 +353,7 @@
             
             // Countdown state and result data
             // Target Date has been set to the past for testing result view as per previous request/logic.
-            const targetDate = new Date('October 02, 2025 22:00:00 GMT+0530'); 
+            const targetDate = new Date('October 03, 2025 22:00:00 GMT+0530'); 
             const [countdown, setCountdown] = useState(calculateTimeRemaining(targetDate));
             const [resultData, setResultData] = useState({});
             const [isResultLoading, setResultLoading] = useState(false);
@@ -813,7 +813,7 @@
                             ) : active === "Result" ? (
                                 /* --- Result Tab View (Translated to Roman Hindi) --- */
                                 <div className="bg-white border rounded-lg p-6 text-center shadow-lg">
-                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">02-10-2025</h2>
+                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">Special Day Majlis Talimi Umoor</h2>
                                     {countdown.expired ? (
                                         <>
                                             <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announce ho gaye hain!</div>
@@ -1030,6 +1030,7 @@
 
 </body>
 </html>
+
 
 
 
