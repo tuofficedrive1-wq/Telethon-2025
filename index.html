@@ -375,8 +375,26 @@
                             const winner = scoreA > scoreB ? 'A' : (scoreB > scoreA ? 'B' : 'None');
 
                             return (
-                                <div key={match.id} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl shadow-md transform hover:scale-105 transition-transform duration-300">
-                                    <div className="flex justify-around items-center text-center">
+                                <div key={match.id} className="bg-slate-50 border border-slate-200 p-3 md:p-4 rounded-2xl shadow-md transform hover:scale-105 transition-transform duration-300">
+                                    {/* Mobile View: hidden on md and up */}
+                                    <div className="md:hidden">
+                                        <div className={`flex justify-between items-center p-2 rounded-lg mb-2 ${winner === 'A' ? 'bg-green-50' : ''}`}>
+                                            <span className={`text-lg font-['Bowlby_One_SC'] uppercase ${winner === 'A' ? 'text-green-600' : 'text-slate-700'}`}>{match.teamA}</span>
+                                            <span className={`text-2xl font-['Bebas_Neue'] tracking-wider ${winner === 'A' ? 'text-green-500' : 'text-slate-500'}`}>
+                                                <AnimatedNumber value={scoreA} formatter={(val) => val.toFixed(1)} />
+                                            </span>
+                                        </div>
+                                        <div className="text-center text-slate-400 font-bold my-1 text-xl">VS</div>
+                                        <div className={`flex justify-between items-center p-2 rounded-lg ${winner === 'B' ? 'bg-green-50' : ''}`}>
+                                            <span className={`text-lg font-['Bowlby_One_SC'] uppercase ${winner === 'B' ? 'text-green-600' : 'text-slate-700'}`}>{match.teamB}</span>
+                                            <span className={`text-2xl font-['Bebas_Neue'] tracking-wider ${winner === 'B' ? 'text-green-500' : 'text-slate-500'}`}>
+                                                <AnimatedNumber value={scoreB} formatter={(val) => val.toFixed(1)} />
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Desktop View: hidden on small screens */}
+                                    <div className="hidden md:flex justify-around items-center text-center">
                                         {/* Team A */}
                                         <div className={`flex-1 flex flex-col items-center p-2 rounded-lg ${winner === 'A' ? 'font-extrabold' : ''}`}>
                                             <div className={`text-xl md:text-2xl font-['Bowlby_One_SC'] uppercase ${winner === 'A' ? 'text-green-600' : 'text-slate-700'}`}>{match.teamA}</div>
