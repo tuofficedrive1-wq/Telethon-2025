@@ -101,7 +101,7 @@
         }
 
 
-        // Component for smooth number animation (Kept for other total numbers if needed, but not used in Overall Rank now)
+        // Component for smooth number animation
         const AnimatedNumber = ({ value, duration = 1500, formatter }) => {
             const [displayValue, setDisplayValue] = useState(value);
             const previousValueRef = useRef(value);
@@ -111,7 +111,6 @@
                 const startValue = previousValueRef.current || 0;
                 const endValue = value || 0;
                 
-                // If value hasn't changed or component is new and value is 0, skip animation
                 if (endValue === startValue) {
                     setDisplayValue(endValue);
                     return;
@@ -121,10 +120,7 @@
                     if (!startTimestamp) startTimestamp = timestamp;
                     const elapsed = timestamp - startTimestamp;
                     const progress = Math.min(1, elapsed / duration);
-
-                    // Easing function (simple cubic ease-out)
                     const easedProgress = 1 - Math.pow(1 - progress, 3); 
-
                     const currentValue = startValue + (endValue - startValue) * easedProgress;
                     setDisplayValue(currentValue);
 
@@ -137,15 +133,12 @@
 
                 const animationFrameId = requestAnimationFrame(step);
 
-                // Cleanup function
                 return () => {
                     cancelAnimationFrame(animationFrameId);
-                    // Update previous value for the next render cycle
                     previousValueRef.current = endValue; 
                 };
             }, [value, duration]);
 
-            // Update ref for immediate re-render on value change if component re-mounts
             useEffect(() => {
                 previousValueRef.current = value;
             }, [value]);
@@ -154,7 +147,26 @@
             return <span>{formatter(displayValue)}</span>;
         };
         
-        // --- Google Sheet Configuration and Logic (Original) ---
+        // --- Live Clock Component ---
+        const LiveClock = () => {
+            const [time, setTime] = useState(new Date());
+
+            useEffect(() => {
+                const timerId = setInterval(() => {
+                    setTime(new Date());
+                }, 1000);
+
+                return () => clearInterval(timerId);
+            }, []);
+
+            return (
+                <div className="text-sm font-medium text-slate-600 bg-slate-200 px-3 py-1 rounded-lg shadow-inner">
+                    {time.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                </div>
+            );
+        };
+        
+        // --- Google Sheet Configuration and Logic ---
         
         const DEFAULT_SHEET_CONFIGS = {
             "Ibtidaiya": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Ibtidaiya" },
@@ -169,16 +181,15 @@
             "Sabia": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Sabia" },
             "Doratul Hadis": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Daurul Hadis" },
             "Takhassusat": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Takhassusat" },
-            // Overall Rank and Result tabs are special cases
             "Overall Rank": { id: null, sheet: null },
-            "Result": { id: null, sheet: null }
+            "Result": { id: null, sheet: null },
+            "Region Competition": { id: null, sheet: null }
         };
 
         const POLL_INTERVAL_MS = 5000;
         const LOCALSTORAGE_KEY = "telethone_sheet_overrides_enhanced_live";
-        const UNIT_DIVISOR = 7000; // Constant for unit calculation
+        const UNIT_DIVISOR = 7000;
 
-        // Utility function to extract the Google Sheet ID from various URLs or raw input
         function parseSheetIdFromUrl(input) {
             if (!input) return null;
             input = input.trim();
@@ -190,17 +201,14 @@
             return null;
         }
 
-        // Utility function to validate the extracted Sheet ID
         function isValidSheetId(id) {
             return Boolean(id && /^[a-zA-Z0-9-_]{10,}$/.test(id));
         }
 
-        // Constructs the Google Visualization API URL
         function gvizUrl(sheetId, sheetName) {
             return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
         }
 
-        // Fetches and parses data from the Google Sheet via GViz API
         async function fetchSheetData(sheetId, sheetName) {
             for (let attempt = 0; attempt < 3; attempt++) {
                 try {
@@ -256,15 +264,13 @@
             throw new Error("Failed to fetch sheet data after multiple retries.");
         }
 
-
-        // Candidate headers for automatic column mapping
         const RANK_CANDIDATES = ["Rank", "S. R.", "S.R.", "S R", "Sr", "Serial", "S No", "S.No"];
         const USTAZ_CANDIDATES = ["Ustaz Name", "USTAZ NAME", "Ustaz", "Ustad", "Instructor", "Teacher", "Class"];
         const JAMIA_CANDIDATES = ["Jamia Name", "JAMIA NAME", "Jamia", "Jamiah"];
         const RAQAM_CANDIDATES = ["Raqam", "RAQAM", "Amount", "Value", "रकम", "राशि"];
-        const UNIT_CANDIDATES = ["Unit", "UNIT", "Units"]; // Original unit column is ignored now
+        const UNIT_CANDIDATES = ["Unit", "UNIT", "Units"];
+        const REGION_CANDIDATES = ["Region", "REGION", "Zone"];
 
-        // Finds the correct column header based on a list of candidates
         function findColumnByCandidates(cols, candidates) {
             const lower = cols.map((c) => (c || "").toLowerCase().trim());
             for (let cand of candidates) {
@@ -280,7 +286,6 @@
             return null;
         }
 
-        // Returns a medal emoji for the top 3 ranks
         function medalForIndex(i) {
             if (i === 0) return "🥇";
             if (i === 1) return "🥈";
@@ -288,7 +293,6 @@
             return "";
         }
         
-        // Countdown Logic
         function calculateTimeRemaining(targetDate) {
             const now = new Date();
             const difference = targetDate - now;
@@ -301,12 +305,10 @@
             const minutes = Math.floor((difference / 1000 / 60) % 60);
             const hours = Math.floor((difference / (1000 * 60 * 60)) % 24);
             const days = Math.floor(difference / (1000 * 60 * 60 * 24));
-
-            // BUG FIX: Set expired to false if time is remaining
+            
             return { days, hours, minutes, seconds, expired: false }; 
         }
         
-        // Function to safely parse a string to a number
         function parseNumericValue(value, isInteger = false) {
             if (value === null || value === undefined || String(value).trim() === "") {
                 return NaN;
@@ -318,13 +320,98 @@
             
             return isInteger ? Math.round(n) : n;
         }
+        
+        // --- Region Competition Component ---
+        const RegionCompetitionView = ({ regionData, isLoading, error }) => {
+            const getUnit = (regionName) => {
+                 if (!regionName) return 0;
+                 const regionNames = Object.keys(regionData);
+                 const actualRegionName = regionNames.find(name => name.toLowerCase() === regionName.toLowerCase());
+                 return regionData[actualRegionName]?.totalUnit || 0;
+            };
 
+            const matchups = [
+                { id: 1, teamA: 'Ajmer', teamB: 'Dehli' },
+                { id: 2, teamA: 'Mumbai', teamB: 'HYDERABAD & Banglore' },
+                { id: 3, teamA: 'Kolkata', teamB: 'HYDERABAD' }
+            ];
+
+            const calculateScore = (teamName) => {
+                if (teamName === 'HYDERABAD & Banglore') {
+                    return getUnit('HYDERABAD') + getUnit('Banglore');
+                }
+                return getUnit(teamName);
+            };
+            
+            // Initial loader, only shown when no data is present yet
+            if (isLoading && Object.keys(regionData).length === 0) {
+                 return (
+                    <div className="flex justify-center items-center p-10">
+                        <div className="loader w-10 h-10 border-t-sky-500 border-4"></div>
+                        <span className="ml-4 text-slate-500">Region data load ho raha hai...</span>
+                    </div>
+                );
+            }
+
+            if (error) {
+                return <div className="text-center p-4 text-rose-600">{error}</div>;
+            }
+            
+            // Empty state if loading is finished and still no data
+            if (Object.keys(regionData).length === 0 && !isLoading) {
+                 return <div className="text-center p-10 text-slate-500">Koi region data nahi mila. Sheets mein 'Region' column check karein.</div>;
+            }
+
+            // Main view, which is always rendered if data exists, even during updates
+            return (
+                <div className="bg-white border rounded-lg p-4 shadow-lg relative">
+                    {/* Background loader for updates has been removed */}
+
+                    <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-6 text-center">Region Competition Scoreboard</h2>
+                    <div className="space-y-6">
+                        {matchups.map(match => {
+                            const scoreA = calculateScore(match.teamA);
+                            const scoreB = calculateScore(match.teamB);
+                            const winner = scoreA > scoreB ? 'A' : (scoreB > scoreA ? 'B' : 'None');
+
+                            return (
+                                <div key={match.id} className="bg-slate-50 border border-slate-200 p-4 rounded-2xl shadow-md transform hover:scale-105 transition-transform duration-300">
+                                    <div className="flex justify-around items-center text-center">
+                                        {/* Team A */}
+                                        <div className={`flex-1 flex flex-col items-center p-2 rounded-lg ${winner === 'A' ? 'font-extrabold' : ''}`}>
+                                            <div className={`text-xl md:text-2xl font-['Bowlby_One_SC'] uppercase ${winner === 'A' ? 'text-green-600' : 'text-slate-700'}`}>{match.teamA}</div>
+                                            <div className="text-xs text-slate-500">Region</div>
+                                        </div>
+                                        
+                                        {/* Scores */}
+                                        <div className="flex items-center">
+                                             <div className={`text-3xl md:text-5xl font-['Bebas_Neue'] p-2 rounded-lg tracking-wider ${winner === 'A' ? 'text-green-500' : 'text-slate-500'}`}>
+                                                <AnimatedNumber value={scoreA} formatter={(val) => val.toFixed(1)} />
+                                             </div>
+                                             <div className="text-2xl md:text-4xl font-extrabold text-slate-400 mx-4">VS</div>
+                                             <div className={`text-3xl md:text-5xl font-['Bebas_Neue'] p-2 rounded-lg tracking-wider ${winner === 'B' ? 'text-green-500' : 'text-slate-500'}`}>
+                                                 <AnimatedNumber value={scoreB} formatter={(val) => val.toFixed(1)} />
+                                             </div>
+                                        </div>
+
+                                        {/* Team B */}
+                                        <div className={`flex-1 flex flex-col items-center p-2 rounded-lg ${winner === 'B' ? 'font-extrabold' : ''}`}>
+                                             <div className={`text-xl md:text-2xl font-['Bowlby_One_SC'] uppercase ${winner === 'B' ? 'text-green-600' : 'text-slate-700'}`}>{match.teamB}</div>
+                                            <div className="text-xs text-slate-500">Region</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
 
         function TelethoneEnhancedLive() {
             const options = Object.keys(DEFAULT_SHEET_CONFIGS);
-            const [active, setActive] = useState("Ibtidaiya"); // Changed default to a class
+            const [active, setActive] = useState("Ibtidaiya"); 
 
-            // State to handle user-defined sheet ID overrides
             const [overrides, setOverrides] = useState(() => {
                 try {
                     const raw = localStorage.getItem(LOCALSTORAGE_KEY);
@@ -335,14 +422,12 @@
                 return out;
             });
 
-            // Persist overrides to localStorage
             useEffect(() => {
                 try {
                     localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(overrides));
                 } catch (e) {}
             }, [overrides]);
 
-            // Main dashboard data states
             const [data, setData] = useState({ items: [] });
             const [isLoading, setLoading] = useState(true); 
             const [isDataLoaded, setIsDataLoaded] = useState(false);
@@ -351,33 +436,31 @@
             const [highlightKey, setHighlightKey] = useState(null);
             const pollRef = useRef(null);
             
-            // Countdown state and result data
-            // Target Date has been set to the past for testing result view as per previous request/logic.
             const targetDate = new Date('October 03, 2025 22:00:00 GMT+0530'); 
             const [countdown, setCountdown] = useState(calculateTimeRemaining(targetDate));
             const [resultData, setResultData] = useState({});
             const [isResultLoading, setResultLoading] = useState(false);
             const [resultError, setResultError] = useState(null);
 
-            // Overall Rank States
             const [overallRankData, setOverallRankData] = useState([]);
-            // State for the big animated numbers (Kept, but not rendered)
             const [overallTotalAmount, setOverallTotalAmount] = useState(0); 
             const [overallTotalUnit, setOverallTotalUnit] = useState(0);
             
             const [isRankLoading, setRankLoading] = useState(true);
             const [isRankDataLoaded, setIsRankDataLoaded] = useState(false);
             const [rankError, setRankError] = useState(null);
+            
+            // Region Competition States
+            const [regionData, setRegionData] = useState({});
+            const [isRegionLoading, setRegionLoading] = useState(true);
+            const [regionError, setRegionError] = useState(null);
 
-
-            // Gets the Sheet ID and sheet name for the active tab
             function getActiveConfig() {
                 const cfg = DEFAULT_SHEET_CONFIGS[active] || { id: "", sheet: "Sheet1" };
                 const id = overrides[active] ?? cfg.id ?? "";
                 return { id, sheet: cfg.sheet || "Sheet1" };
             }
 
-            // Function to fetch and process data for the active sheet (Individual Class)
             async function loadActiveSheet() {
                 const { id, sheet } = getActiveConfig();
                 
@@ -391,18 +474,14 @@
                 if (!isDataLoaded) setLoading(true); 
                 setError(null);
                 try {
-                    const fetched = await fetchSheetData(id, sheet);
-                    const cols = fetched.cols;
-                    const rows = fetched.items;
-
+                    const { cols, items: rows } = await fetchSheetData(id, sheet);
                     const rankCol = findColumnByCandidates(cols, RANK_CANDIDATES);
                     const ustazCol = findColumnByCandidates(cols, USTAZ_CANDIDATES);
                     const jamiaCol = findColumnByCandidates(cols, JAMIA_CANDIDATES);
                     const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
-                    const unitCol = findColumnByCandidates(cols, UNIT_CANDIDATES); // This column is now ignored for calculation but kept for backward compatibility
 
                     if (!jamiaCol || !raqamCol) {
-                        setError("Sheet mein kam-az-kam 'Jamia Name' aur 'Raqam' ke headers pehli row mein hone chahiye. Confirm karein ki header row maujood hai aur padhni ja sakti hai.");
+                        setError("Sheet mein 'Jamia Name' aur 'Raqam' ke headers hone chahiye.");
                         setData({ items: [] });
                         setLoading(false);
                         setIsDataLoaded(true);
@@ -411,30 +490,15 @@
 
                     const parsed = rows
                         .map((r, idx) => {
-                            const rankRaw = rankCol ? r[rankCol] : null;
-                            const ustazRaw = ustazCol ? r[ustazCol] : null;
-                            const jamiaRaw = r[jamiaCol];
-                            const raqamRaw = r[raqamCol];
-                            // const unitRaw = unitCol ? r[unitCol] : null; // Original unit column is ignored now
-
-                            const rank = rankRaw === null || rankRaw === undefined ? "" : String(rankRaw).trim();
-                            const ustaz = ustazRaw === null || ustazRaw === undefined ? "" : String(ustazRaw).trim();
-                            const jamia = jamiaRaw === null || jamiaRaw === undefined ? "" : String(jamiaRaw).trim();
-                            
-                            const n = parseNumericValue(raqamRaw);
-                            
-                            // NEW LOGIC: Calculate unit based on raqam, ignore sheet unit column
-                            const calculatedUnit = formatUnit(n);
-
-
+                            const n = parseNumericValue(r[raqamCol]);
                             return { 
                                 __id: idx, 
-                                rank, 
-                                ustaz, 
-                                jamia, 
-                                unit: calculatedUnit, // Use the new calculated and formatted unit
-                                raqamRaw, 
-                                __value: n // numeric value for sorting
+                                rank: String(r[rankCol] || "").trim(), 
+                                ustaz: String(r[ustazCol] || "").trim(), 
+                                jamia: String(r[jamiaCol] || "").trim(), 
+                                unit: formatUnit(n),
+                                raqamRaw: r[raqamCol], 
+                                __value: n
                             };
                         })
                         .filter((x) => x.jamia !== "" && !Number.isNaN(x.__value));
@@ -448,139 +512,90 @@
                     }
 
                     setData({ items: parsed });
-                    setLoading(false);
-                    setIsDataLoaded(true);
                 } catch (err) {
                     console.error(err);
                     setError(err.message || String(err));
-                    if (!isDataLoaded) setData({ items: [] }); 
+                    if (!isDataLoaded) setData({ items: [] });
+                } finally {
                     setLoading(false);
                     setIsDataLoaded(true);
                 }
             }
-
-            // Function to load all class totals for overall ranking
+            
             async function loadOverallRank() {
-                // Only show loading indicator on the first load for overall rank
                 if (!isRankDataLoaded) setRankLoading(true);
                 setRankError(null);
-                const sheetOptions = options.filter(key => key !== "Result" && key !== "Overall Rank");
+                const sheetOptions = options.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
                 
                 const fetchPromises = sheetOptions.map(async (opt) => {
                     const cfg = DEFAULT_SHEET_CONFIGS[opt];
-                    const id = overrides[opt] ?? cfg.id ?? "";
-                    
-                    if (!isValidSheetId(id)) {
-                        // For overall rank calculation, if a sheet is not configured, its contribution is 0
-                        return { className: opt, totalAmount: 0, totalUnit: 0, error: "Not Configured" };
-                    }
+                    const id = overrides[opt] ?? cfg.id;
+                    if (!isValidSheetId(id)) return { className: opt, totalAmount: 0, totalUnit: 0, error: "Not Configured" };
 
                     try {
-                        const fetched = await fetchSheetData(id, cfg.sheet);
-                        const cols = fetched.cols;
-                        const rows = fetched.items;
-
+                        const { cols, items: rows } = await fetchSheetData(id, cfg.sheet);
                         const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
-
-                        if (!raqamCol) {
-                            return { className: opt, totalAmount: 0, totalUnit: 0, error: "Missing Raqam Column" };
-                        }
+                        if (!raqamCol) return { className: opt, totalAmount: 0, totalUnit: 0, error: "Missing Raqam Column" };
                         
                         let totalAmount = 0;
-
                         rows.forEach((r) => {
-                            const raqamRaw = r[raqamCol];
-                            const n = parseNumericValue(raqamRaw);
+                            const n = parseNumericValue(r[raqamCol]);
                             totalAmount += Number.isNaN(n) ? 0 : n;
                         });
                         
-                        // NEW LOGIC: Calculate unit based on amount (used for sorting only)
-                        const calculatedUnit = totalAmount / UNIT_DIVISOR;
-                        
-                        return { className: opt, totalAmount, totalUnit: calculatedUnit, error: null };
+                        return { className: opt, totalAmount, totalUnit: totalAmount / UNIT_DIVISOR, error: null };
                     } catch (err) {
-                        console.error(`Error fetching data for ${opt}:`, err);
                         return { className: opt, totalAmount: 0, totalUnit: 0, error: err.message };
                     }
                 });
 
                 try {
                     const results = await Promise.all(fetchPromises);
+                    const validResults = results.filter(r => r.totalAmount > 0 || (r.error && r.error.includes("Missing Raqam Column")));
                     
-                    // Filter out rows where Total Amount is 0 AND Total Unit is 0 AND it's not a missing column error
-                    const validResults = results.filter(r => r.totalAmount > 0 || r.totalUnit > 0 || (r.error && r.error.includes("Missing Raqam Column")));
-                    
-                    // Calculate grand totals for the animated numbers (kept for logic, but not rendered)
                     const grandTotalAmount = results.reduce((sum, r) => sum + r.totalAmount, 0);
-                    const grandTotalUnit = results.reduce((sum, r) => sum + r.totalUnit, 0); // This total unit is now the sum of calculated units
-
                     setOverallTotalAmount(grandTotalAmount);
-                    setOverallTotalUnit(grandTotalUnit);
+                    setOverallTotalUnit(grandTotalAmount / UNIT_DIVISOR);
                     
-                    // Sort for the rank list
-                    // Sort primarily by totalAmount, secondarily by calculated totalUnit
-                    validResults.sort((a, b) => {
-                        if (b.totalAmount !== a.totalAmount) {
-                            return b.totalAmount - a.totalAmount;
-                        }
-                        return b.totalUnit - a.totalUnit;
-                    });
+                    validResults.sort((a, b) => b.totalAmount - a.totalAmount);
 
                     setOverallRankData(validResults);
-                    setRankLoading(false);
-                    setIsRankDataLoaded(true);
-
                 } catch (e) {
                     setRankError("Sabhi rank data ko process nahi kiya ja saka.");
-                    setRankLoading(false);
-                    setIsRankDataLoaded(true);
+                } finally {
+                     setRankLoading(false);
+                     setIsRankDataLoaded(true);
                 }
             }
 
-
-            // Function to load all class results for the "Result" tab 
             async function loadAllResults() {
                 setResultLoading(true);
                 setResultError(null);
-                const allWinnersByClass = {};
-                const sheetOptions = options.filter(key => key !== "Result" && key !== "Overall Rank");
+                const sheetOptions = options.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
 
                 const fetchPromises = sheetOptions.map(async (opt) => {
                     const cfg = DEFAULT_SHEET_CONFIGS[opt];
-                    const id = overrides[opt] ?? cfg.id ?? "";
-                    
+                    const id = overrides[opt] ?? cfg.id;
                     if (!isValidSheetId(id)) return { className: opt, winners: [], error: "Not Configured" };
 
                     try {
-                        const fetched = await fetchSheetData(id, cfg.sheet);
-                        const cols = fetched.cols;
-                        const rows = fetched.items;
-
+                        const { cols, items: rows } = await fetchSheetData(id, cfg.sheet);
                         const jamiaCol = findColumnByCandidates(cols, JAMIA_CANDIDATES);
                         const ustazCol = findColumnByCandidates(cols, USTAZ_CANDIDATES);
                         const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
-
                         if (!jamiaCol || !raqamCol) return { className: opt, winners: [], error: "Missing Columns" };
 
                         const parsed = rows
-                            .map((r, idx) => {
-                                const jamiaRaw = r[jamiaCol];
-                                const ustazRaw = ustazCol ? r[ustazCol] : null;
-                                const raqamRaw = r[raqamCol];
-
-                                const ustaz = ustazRaw === null || ustazRaw === undefined ? "" : String(ustazRaw).trim();
-                                const jamia = jamiaRaw === null || jamiaRaw === undefined ? "" : String(jamiaRaw).trim();
-                                const n = parseNumericValue(raqamRaw);
-
-                                return { __id: idx, ustaz, jamia, __value: n };
-                            })
-                            .filter((x) => x.jamia !== "" && !Number.isNaN(x.__value));
-
+                            .map((r, idx) => ({ 
+                                __id: idx, 
+                                ustaz: String(r[ustazCol] || "").trim(), 
+                                jamia: String(r[jamiaCol] || "").trim(), 
+                                __value: parseNumericValue(r[raqamCol]) 
+                            }))
+                            .filter(x => x.jamia !== "" && !Number.isNaN(x.__value));
                         parsed.sort((a, b) => b.__value - a.__value);
-                        
                         return { className: opt, winners: parsed.slice(0, 3) };
                     } catch (err) {
-                        console.error(`Error fetching results for ${opt}:`, err);
                         return { className: opt, winners: [], error: err.message };
                     }
                 });
@@ -589,67 +604,106 @@
                     const results = await Promise.all(fetchPromises);
                     const winnersMap = {};
                     results.forEach(r => {
-                        if (r.winners && r.winners.length > 0) {
-                             winnersMap[r.className] = r.winners;
-                        } else if (r.error && r.error.includes("Too many requests")) {
-                            setResultError(r.error);
-                        }
+                        if (r.winners.length > 0) winnersMap[r.className] = r.winners;
+                        if (r.error?.includes("Too many requests")) setResultError(r.error);
                     });
                     setResultData(winnersMap);
-
                 } catch (e) {
                     setResultError("Sabhi results data ko process nahi kiya ja saka.");
                 } finally {
                     setResultLoading(false);
                 }
             }
+            
+            async function loadRegionData() {
+                setRegionLoading(true); // Always set loading to true when starting a fetch
+                setRegionError(null);
+                
+                const sheetOptions = options.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
+                const regionTotals = {};
 
-            // Main effect hook for polling and countdown updates
-            useEffect(() => {
-                if (active === "Result") {
-                    if (pollRef.current) clearInterval(pollRef.current);
-                    
-                    // Only start loading results if the countdown has expired
-                    if (countdown.expired) {
-                        loadAllResults();
-                    }
+                const fetchPromises = sheetOptions.map(async (opt) => {
+                    const cfg = DEFAULT_SHEET_CONFIGS[opt];
+                    const id = overrides[opt] ?? cfg.id;
+                    if (!isValidSheetId(id)) return;
 
-                    // Set up the 1-second interval for countdown update
-                    const timer = setInterval(() => {
-                        setCountdown(calculateTimeRemaining(targetDate));
-                    }, 1000);
-                    
-                    // Clean up the interval when the component unmounts or active changes
-                    return () => clearInterval(timer);
-                    
-                } else if (active === "Overall Rank") { 
-                    if (pollRef.current) clearInterval(pollRef.current);
-                    loadOverallRank();
-                    // Poll silently in the background
-                    pollRef.current = setInterval(loadOverallRank, POLL_INTERVAL_MS);
-                    return () => clearInterval(pollRef.current);
-                } else {
-                    if (pollRef.current) clearInterval(pollRef.current);
-                    const { id } = getActiveConfig();
-                    if (isValidSheetId(id)) {
-                        loadActiveSheet();
-                        pollRef.current = setInterval(loadActiveSheet, POLL_INTERVAL_MS);
-                    } else {
-                        setData({ items: [] });
-                        setError(null);
-                        setLoading(false);
-                        setIsDataLoaded(true);
+                    try {
+                        const { cols, items: rows } = await fetchSheetData(id, cfg.sheet);
+                        const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
+                        const regionCol = findColumnByCandidates(cols, REGION_CANDIDATES);
+
+                        if (!raqamCol || !regionCol) {
+                            console.warn(`Sheet "${opt}" is missing 'Raqam' or 'Region' column.`);
+                            return;
+                        }
+                        
+                        rows.forEach((r) => {
+                            const region = r[regionCol] ? String(r[regionCol]).trim() : null;
+                            const n = parseNumericValue(r[raqamCol]);
+                            if (region && !Number.isNaN(n)) {
+                                if (!regionTotals[region]) regionTotals[region] = 0;
+                                regionTotals[region] += n;
+                            }
+                        });
+                    } catch (err) {
+                        console.error(`Error fetching region data for ${opt}:`, err);
                     }
-                    return () => clearInterval(pollRef.current);
+                });
+
+                try {
+                    await Promise.all(fetchPromises);
+                    const finalRegionData = {};
+                    for (const region in regionTotals) {
+                        finalRegionData[region] = {
+                            totalAmount: regionTotals[region],
+                            totalUnit: regionTotals[region] / UNIT_DIVISOR
+                        };
+                    }
+                    setRegionData(finalRegionData);
+                } catch (e) {
+                    setRegionError("Sabhi region data ko process nahi kiya ja saka.");
+                } finally {
+                    setRegionLoading(false);
                 }
-            }, [active, overrides, countdown.expired]); // Re-run effect if active changes or expired state changes
+            }
 
-            // Handler to set the new sheet ID/URL
+            useEffect(() => {
+                const actionMap = {
+                    "Result": () => {
+                        if (countdown.expired) loadAllResults();
+                        const timer = setInterval(() => setCountdown(calculateTimeRemaining(targetDate)), 1000);
+                        return () => clearInterval(timer);
+                    },
+                    "Overall Rank": loadOverallRank,
+                    "Region Competition": loadRegionData,
+                    "Default": loadActiveSheet,
+                };
+                
+                const currentAction = actionMap[active] || actionMap["Default"];
+                
+                if (pollRef.current) clearInterval(pollRef.current);
+                const { id } = getActiveConfig();
+
+                if (active !== "Result" && active !== "Overall Rank" && active !== "Region Competition" && !isValidSheetId(id)) {
+                     setData({ items: [] });
+                     setError(null);
+                     setLoading(false);
+                     setIsDataLoaded(true);
+                } else {
+                    currentAction();
+                    if (active !== "Result") {
+                        pollRef.current = setInterval(currentAction, POLL_INTERVAL_MS);
+                    }
+                }
+                
+                return () => clearInterval(pollRef.current);
+            }, [active, overrides, countdown.expired]);
+
             function handleSetSheetId(e) {
                 e.preventDefault();
                 const possible = parseSheetIdFromUrl(sheetInput);
                 if (!possible) {
-                    setError("Input se koi valid Sheet ID nahi nikali ja saki. Kripya poora sheet URL ya sirf Sheet ID paste karein.");
+                    setError("Invalid Sheet URL/ID.");
                     return;
                 }
                 setOverrides((prev) => ({ ...prev, [active]: possible }));
@@ -657,14 +711,12 @@
                 setError(null);
             }
             
-            // Dynamic labels based on active tab
             const ustazLabel = active === 'Takhassusat' ? 'Jamia Name' : 'Ustaz Name';
             const jamiaLabel = active === 'Takhassusat' ? 'Class' : 'Jamia Name';
 
-            // Check if full screen loader should be active (only on first load)
-            // For Overall Rank, we only want the loader on initial load (!isRankDataLoaded)
-            const showFullScreenLoader = (active !== "Overall Rank" && isLoading && !isDataLoaded) || 
-                                         (active === "Overall Rank" && isRankLoading && !isRankDataLoaded);
+            const showFullScreenLoader = (active !== "Overall Rank" && active !== "Region Competition" && isLoading && !isDataLoaded) || 
+                                         (active === "Overall Rank" && isRankLoading && !isRankDataLoaded) ||
+                                         (active === "Region Competition" && isRegionLoading && Object.keys(regionData).length === 0);
 
             return (
                 <div className="min-h-screen bg-gray-50">
@@ -677,26 +729,20 @@
                         </header>
 
                         <nav className="mb-4">
-                            {/* Desktop Navigation */}
                             <div className="hidden md:flex flex-wrap gap-2 justify-center">
                                 {options.map((opt) => {
                                     const cfg = DEFAULT_SHEET_CONFIGS[opt];
                                     const id = overrides[opt] ?? cfg.id ?? "";
-                                    const valid = isValidSheetId(id) || opt === "Overall Rank" || opt === "Result"; 
+                                    const valid = opt.includes("Rank") || opt.includes("Result") || opt.includes("Competition") || isValidSheetId(id); 
                                     return (
                                         <button
                                             key={opt}
-                                            onClick={() => {
-                                                setActive(opt);
-                                                if (overrides[opt]) setSheetInput(overrides[opt]);
-                                            }}
-                                            className={`px-3 py-2 rounded-2xl font-medium text-sm shadow-sm focus:outline-none transition-transform transform hover:-translate-y-0.5 ${
-                                                active === opt ? "bg-sky-600 text-white shadow-lg" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
-                                            }`}
-                                            title={opt !== "Overall Rank" && opt !== "Result" ? (valid ? `Sheet configured (${id.slice(0, 8)}...)` : "Not configured — click and paste sheet URL/ID") : opt}
+                                            onClick={() => setActive(opt)}
+                                            className={`px-3 py-2 rounded-2xl font-medium text-sm shadow-sm focus:outline-none transition-transform transform hover:-translate-y-0.5 ${ active === opt ? "bg-sky-600 text-white shadow-lg" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50" }`}
+                                            title={!valid ? "Not configured" : ""}
                                         >
                                             <span className="inline-flex items-center gap-2">
-                                                {opt !== "Overall Rank" && opt !== "Result" && <span className={`w-2 h-2 rounded-full ${valid ? "bg-emerald-400" : "bg-rose-400"}`} />}
+                                                {!opt.includes("Rank") && !opt.includes("Result") && !opt.includes("Competition") && <span className={`w-2 h-2 rounded-full ${valid ? "bg-emerald-400" : "bg-rose-400"}`} />}
                                                 <span>{opt}</span>
                                             </span>
                                         </button>
@@ -704,18 +750,9 @@
                                 })}
                             </div>
 
-                            {/* Mobile Dropdown */}
                             <div className="md:hidden">
-                                <label htmlFor="class-select" className="sr-only">Select a Class</label>
-                                <select
-                                    id="class-select"
-                                    value={active}
-                                    onChange={(e) => setActive(e.target.value)}
-                                    className="block w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-sky-500 shadow-sm"
-                                >
-                                    {options.map((opt) => (
-                                        <option key={opt} value={opt}>{opt}</option>
-                                    ))}
+                                <select value={active} onChange={(e) => setActive(e.target.value)} className="block w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm">
+                                    {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
                                 </select>
                             </div>
                         </nav>
@@ -725,108 +762,66 @@
                         </div>
 
                         <main className="relative">
-                            {/* Full Screen Initial Loader (Runs only on first load for Overall Rank) */}
                             {showFullScreenLoader && (
                                 <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-20 flex justify-center items-center rounded-lg shadow-xl">
                                     <div className="text-xl text-slate-500 flex flex-col items-center p-8 bg-white border rounded-xl shadow-lg">
                                         <div className="loader w-10 h-10 mb-4 border-t-sky-500 border-4"></div>
-                                        {active === "Overall Rank" ? "Overall Ranking Load ho raha hai..." : "Live Data Load ho raha hai..."}
+                                        Loading...
                                     </div>
                                 </div>
                             )}
 
                             {active === "Overall Rank" ? (
-                                /* --- Overall Rank Tab View --- */
                                 <div className="bg-white border rounded-lg p-4 shadow-lg relative">
-                                    {/* Grand Totals Section has been removed as requested. */}
-                                    
-                                    <h2 className="text-xl md:text-2xl font-bold text-slate-800 mb-4 text-center border-b pb-2">All India Classic Rank</h2>
-                                    
-                                    {/* Background Loader for updates has been removed as requested. 
-                                        Data is now fetched silently in the background. */}
-                                    
+                                    <div className="flex justify-between items-center mb-4 border-b pb-2">
+                                        <h2 className="text-xl md:text-2xl font-bold text-slate-800">All India Classic Rank</h2>
+                                        <LiveClock />
+                                    </div>
                                     {rankError && <div className="text-sm text-rose-600 mb-4 p-2 border border-rose-300 bg-rose-50 rounded-lg">Error: {rankError}</div>}
-
-                                    {/* Desktop Header */}
                                     <div className="hidden md:grid grid-cols-12 items-center px-3 py-2 border-b text-sm font-semibold text-slate-700 bg-slate-50 rounded-t-lg">
                                         <div className="col-span-1">Rank</div>
                                         <div className="col-span-5">Class Name</div>
                                         <div className="col-span-3 text-center">Calculated Unit</div>
                                         <div className="col-span-3 text-right">Total Amount</div>
                                     </div>
-
-                                    {/* Overall Rank List */}
                                     <div className="space-y-3 mt-1">
-                                        {overallRankData.map((item, idx) => {
-                                            const isTop = idx === 0;
-                                            const medal = medalForIndex(idx);
-                                            
-                                            // Format the calculated unit to 1 decimal place
-                                            const formattedUnit = formatOverallUnit(item.totalAmount);
-                                            
-                                            return (
-                                                <div 
-                                                    key={item.className} 
-                                                    className={`rank-item grid grid-cols-12 items-center p-3 md:p-4 rounded-xl shadow-sm border 
-                                                        ${isTop ? "bg-yellow-50 border-yellow-400 shadow-lg" : "bg-white border-slate-200 hover:shadow-md"}
-                                                    `}
-                                                >
-                                                    {/* Rank & Medal */}
-                                                    <div className="col-span-1 text-base md:text-2xl font-['Bebas_Neue'] text-center text-slate-800">
-                                                        {idx + 1}
+                                        {overallRankData.map((item, idx) => (
+                                            <div key={item.className} className={`rank-item grid grid-cols-12 items-center p-3 md:p-4 rounded-xl shadow-sm border ${idx === 0 ? "bg-yellow-50 border-yellow-400 shadow-lg" : "bg-white border-slate-200 hover:shadow-md"}`}>
+                                                <div className="col-span-1 text-base md:text-2xl font-['Bebas_Neue'] text-center text-slate-800">{idx + 1}</div>
+                                                <div className="col-span-5 md:ml-4 flex-grow truncate">
+                                                    <div className={`text-base md:text-lg font-bold ${idx === 0 ? "text-yellow-700" : "text-slate-800"}`}>
+                                                        {item.className}
+                                                        <span className="ml-1 text-lg md:text-2xl">{medalForIndex(idx)}</span>
                                                     </div>
-                                                    
-                                                    {/* Class Name (Mobile: col-span-5, Desktop: col-span-5) */}
-                                                    <div className="col-span-5 md:ml-4 flex-grow truncate">
-                                                        <div className={`text-base md:text-lg font-bold ${isTop ? "text-yellow-700" : "text-slate-800"}`}>
-                                                            {item.className}
-                                                            <span className="ml-1 text-lg md:text-2xl">{medal}</span>
-                                                        </div>
-                                                        {item.error ? (
-                                                            <div className="text-xs text-rose-500 mt-1">
-                                                                Error: {item.error.includes("json") ? "Sheet Publish nahi hai ya Access nahi hai." : item.error}
-                                                            </div>
-                                                        ) : (
-                                                            <div className="hidden md:block text-xs text-slate-500">Class Rank</div>
-                                                        )}
-                                                    </div>
-                                                    
-                                                    {/* Calculated Unit (Font changed, Centered) */}
-                                                    <div className={`col-span-3 text-center md:text-xl font-['Bebas_Neue'] text-indigo-500 tracking-wider`}>
-                                                        <span className="md:hidden text-xs text-slate-500 block mb-[-2px]">Unit</span>
-                                                        {formattedUnit}
-                                                    </div>
-                                                    
-                                                    {/* Total Amount (Raqam) (Font changed) */}
-                                                    <div className={`col-span-3 text-right md:text-2xl font-['Bebas_Neue'] ${isTop ? "text-emerald-700" : "text-indigo-600"} tracking-wide min-w-[50px]`}>
-                                                        <span className="md:hidden text-xs text-slate-500 block mb-[-2px]">Amount</span>
-                                                        {item.totalAmount.toLocaleString()}
-                                                    </div>
+                                                    {item.error ? <div className="text-xs text-rose-500 mt-1">Error: {item.error}</div> : <div className="hidden md:block text-xs text-slate-500">Class Rank</div>}
                                                 </div>
-                                            );
-                                        })}
-                                        {overallRankData.length === 0 && !isRankLoading && (
-                                            <div className="text-center p-4 text-slate-500">Koi Data Available nahi hai ya Sheets Configured nahi hain.</div>
-                                        )}
+                                                <div className="col-span-3 text-center md:text-xl font-['Bebas_Neue'] text-indigo-500 tracking-wider">
+                                                    <span className="md:hidden text-xs text-slate-500 block mb-[-2px]">Unit</span>
+                                                    {formatOverallUnit(item.totalAmount)}
+                                                </div>
+                                                <div className={`col-span-3 text-right md:text-2xl font-['Bebas_Neue'] ${idx === 0 ? "text-emerald-700" : "text-indigo-600"} tracking-wide min-w-[50px]`}>
+                                                    <span className="md:hidden text-xs text-slate-500 block mb-[-2px]">Amount</span>
+                                                    {item.totalAmount.toLocaleString()}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {overallRankData.length === 0 && !isRankLoading && <div className="text-center p-4 text-slate-500">No data available.</div>}
                                     </div>
                                 </div>
                             ) : active === "Result" ? (
-                                /* --- Result Tab View (Translated to Roman Hindi) --- */
                                 <div className="bg-white border rounded-lg p-6 text-center shadow-lg">
                                     <h2 className="text-3xl font-extrabold text-slate-800 mb-4">Special Day Majlis Talimi Umoor</h2>
                                     {countdown.expired ? (
                                         <>
-                                            <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announce ho gaye hain!</div>
-                                            {isResultLoading ? (
-                                                <div className="text-sm text-slate-500 animate-pulse">Data Load ho raha hai...</div>
-                                            ) : Object.keys(resultData).length > 0 ? (
+                                            <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announced!</div>
+                                            {isResultLoading ? <div className="text-sm text-slate-500 animate-pulse">Loading...</div> : Object.keys(resultData).length > 0 ? (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                                     {Object.keys(resultData).map(className => (
                                                         <div key={className} className="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm">
                                                             <h3 className="text-xl font-bold text-slate-700 mb-3 border-b pb-2">{className} Winners</h3>
                                                             <div className="space-y-2">
                                                                 {resultData[className].map((item, index) => (
-                                                                    <div key={index} className={`flex items-center p-3 rounded-lg transition-colors ${index === 0 ? "bg-yellow-100 shadow-md" : index === 1 ? "bg-slate-100" : "bg-gray-100"}`}>
+                                                                    <div key={index} className={`flex items-center p-3 rounded-lg ${index === 0 ? "bg-yellow-100" : "bg-slate-100"}`}>
                                                                         <span className="text-2xl mr-3">{medalForIndex(index)}</span>
                                                                         <div className="flex-grow text-left">
                                                                             <p className="text-base font-semibold text-slate-800">{item.jamia}</p>
@@ -835,80 +830,44 @@
                                                                         <span className="font-bold text-lg text-indigo-700">{item.__value.toLocaleString()}</span>
                                                                     </div>
                                                                 ))}
-                                                                {resultData[className].length === 0 && (
-                                                                    <div className="text-sm text-slate-500 p-2">Is Class ke liye koi winner nahi mila.</div>
-                                                                )}
                                                             </div>
                                                         </div>
                                                     ))}
                                                 </div>
-                                            ) : (
-                                                <div className="text-sm text-slate-500 mt-2">Koi result nahi mila. Kripya thodi der baad dobara check karein.</div>
-                                            )}
+                                            ) : <div className="text-sm text-slate-500 mt-2">No results found.</div>}
                                         </>
                                     ) : (
                                         <>
-                                            <div className="text-xl font-medium text-slate-600 mb-6">Results 10:00pm Par Announce honge!</div>
+                                            <div className="text-xl font-medium text-slate-600 mb-6">Results will be announced at 10:00pm!</div>
                                             <div className="flex justify-center items-end gap-4 md:gap-8 font-bold">
-                                                <div className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] md:min-w-[100px] shadow-lg">
-                                                    <span className="text-4xl md:text-5xl text-sky-700">{String(countdown.days).padStart(2, '0')}</span>
-                                                    <span className="text-sm md:text-base text-slate-500">Din</span>
-                                                </div>
-                                                <div className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] md:min-w-[100px] shadow-lg">
-                                                    <span className="text-4xl md:text-5xl text-sky-700">{String(countdown.hours).padStart(2, '0')}</span>
-                                                    <span className="text-sm md:text-base text-slate-500">Ghante</span>
-                                                </div>
-                                                <div className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] md:min-w-[100px] shadow-lg">
-                                                    <span className="text-4xl md:text-5xl text-sky-700">{String(countdown.minutes).padStart(2, '0')}</span>
-                                                    <span className="text-sm md:text-base text-slate-500">Minute</span>
-                                                </div>
-                                                <div className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] md:min-w-[100px] shadow-lg">
-                                                    <span className="text-4xl md:text-5xl text-sky-700">{String(countdown.seconds).padStart(2, '0')}</span>
-                                                    <span className="text-sm md:text-base text-slate-500">Second</span>
-                                                </div>
+                                                {Object.entries({ Days: countdown.days, Hours: countdown.hours, Minutes: countdown.minutes, Seconds: countdown.seconds }).map(([label, value]) => (
+                                                    <div key={label} className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] shadow-lg">
+                                                        <span className="text-4xl md:text-5xl text-sky-700">{String(value).padStart(2, '0')}</span>
+                                                        <span className="text-sm md:text-base text-slate-500">{label}</span>
+                                                    </div>
+                                                ))}
                                             </div>
                                         </>
                                     )}
                                 </div>
+                            ) : active === "Region Competition" ? (
+                                <RegionCompetitionView regionData={regionData} isLoading={isRegionLoading} error={regionError} />
                             ) : (
-                                /* --- Live Data Tab View (Translated to Roman Hindi) --- */
                                 <div className="bg-white border rounded-lg p-4 shadow-lg relative">
-                                    {/* Background Loader for updates (Kept for individual class tabs) */}
-                                    {isLoading && isDataLoaded && (
-                                        <div className="loading-bg flex justify-center items-start pt-8">
-                                            <div className="flex items-center gap-2 text-indigo-600 p-2 bg-indigo-50 rounded-lg shadow-lg">
-                                                <div className="loader"></div>
-                                                <span className="text-sm font-medium">Data Update ho raha hai...</span>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {/* Sheet Configuration Area */}
-                                    {(!isValidSheetId(getActiveConfig().id)) && (
+                                    {/* The background "Updating..." indicator that appeared on data refresh has been removed */}
+                                    {!isValidSheetId(getActiveConfig().id) && (
                                         <div className="mb-4 p-4 border rounded-xl bg-red-50 border-red-200">
-                                            <div className="text-sm font-semibold text-red-700 mb-2">Sheet Configured nahi hai. Live data laane ke liye Google Sheet ka URL ya Sheet ID paste karein.</div>
+                                            <div className="text-sm font-semibold text-red-700 mb-2">Sheet not configured. Paste Google Sheet URL or ID.</div>
                                             <form onSubmit={handleSetSheetId} className="flex gap-2">
-                                                <input
-                                                    value={sheetInput}
-                                                    onChange={(e) => setSheetInput(e.target.value)}
-                                                    placeholder="Poora Google Sheet URL ya Sheet ID daalein"
-                                                    className="flex-1 px-3 py-2 border rounded-lg focus:ring-sky-500 focus:border-sky-500"
-                                                />
-                                                <button type="submit" className="px-4 py-2 rounded-lg bg-sky-600 text-white font-medium hover:bg-sky-700 transition">Set Sheet</button>
+                                                <input value={sheetInput} onChange={(e) => setSheetInput(e.target.value)} placeholder="Google Sheet URL or Sheet ID" className="flex-1 px-3 py-2 border rounded-lg focus:ring-sky-500"/>
+                                                <button type="submit" className="px-4 py-2 rounded-lg bg-sky-600 text-white font-medium">Set Sheet</button>
                                             </form>
-                                            <div className="text-xs text-slate-500 mt-2">Salaah: Sheet ka Share Link (ya /d/{"{id}"}/ URL) use karein. Agar Permission error aata hai, toh Google Sheets mein File → Publish to web ka prayas karein.</div>
                                             {error && <div className="text-sm text-rose-600 mt-2">Error: {error}</div>}
                                         </div>
                                     )}
-
-                                    {/* General Data Fetch Error */}
-                                    {error && isValidSheetId(getActiveConfig().id) && <div className="text-sm text-rose-600 mb-4 p-2 border border-rose-300 bg-rose-50 rounded-lg">Data laane mein Error: {error}</div>}
-
-                                    {/* Items Container */}
+                                    {error && isValidSheetId(getActiveConfig().id) && <div className="text-sm text-rose-600 mb-4 p-2 border border-rose-300 bg-rose-50 rounded-lg">Error: {error}</div>}
                                     <div className={`relative ${showFullScreenLoader ? 'opacity-50 pointer-events-none' : ''}`}>
-                                        
-                                        {/* Desktop Table */}
                                         <div className="hidden md:block">
-                                            {/* Header row */}
                                             <div className="grid grid-cols-12 items-center px-3 py-2 border-b text-sm font-semibold text-slate-700 bg-slate-50 rounded-t-lg">
                                                 <div className="col-span-1">Rank</div>
                                                 <div className="col-span-2">{ustazLabel}</div>
@@ -916,97 +875,36 @@
                                                 <div className="col-span-3 text-right">Raqam</div>
                                                 <div className="col-span-2 text-right">Unit</div>
                                             </div>
-
-                                            {/* Items */}
                                             <div className="space-y-1 mt-1">
                                                 {data.items.map((it, idx) => {
-                                                    const isTop = idx === 0;
-                                                    const isSecond = idx === 1;
-                                                    const isThird = idx === 2;
-                                                    const medal = medalForIndex(idx);
-                                                    const highlight = it.__id === highlightKey;
-
-                                                    const styleClass = isTop
-                                                        ? "bg-yellow-50 border border-yellow-300 shadow-md"
-                                                        : isSecond
-                                                        ? "bg-sky-50 border border-sky-300"
-                                                        : isThird
-                                                        ? "bg-emerald-50 border border-emerald-300"
-                                                        : "bg-white border-transparent hover:bg-slate-50";
-
+                                                    const styleClass = idx === 0 ? "bg-yellow-50 border-yellow-300 shadow-md" : idx === 1 ? "bg-sky-50 border-sky-300" : idx === 2 ? "bg-emerald-50 border-emerald-300" : "bg-white border-transparent hover:bg-slate-50";
                                                     return (
-                                                        <div key={it.__id} className={`grid grid-cols-12 items-center gap-4 p-3 rounded-lg transition-all duration-600 transform ${styleClass} ${highlight ? "highlight-pulse" : ""}`} style={{ willChange: "transform, box-shadow" }}>
-                                                            <div className="col-span-1 flex items-center justify-center font-bold text-base">{idx + 1}</div>
-
-                                                            <div className={`col-span-2 text-left ${isTop || isSecond || isThird ? "text-base font-semibold" : "text-sm font-medium text-slate-600"}`}>
-                                                                {active === 'Takhassusat' ? (it.jamia || "-") : (it.ustaz || "-")}
-                                                            </div>
-
-                                                            <div className={`col-span-4 text-center ${isTop ? "text-xl font-extrabold text-slate-900" : isSecond ? "text-lg font-bold" : isThird ? "text-lg font-semibold" : "text-base font-medium"}`}>
-                                                                <span className="inline-flex items-center gap-2">{medal}<span>{active === 'Takhassusat' ? it.ustaz : it.jamia}</span></span>
-                                                            </div>
-
-                                                            <div className={`col-span-3 text-right ${isTop ? "text-emerald-600" : isSecond ? "text-sky-600" : isThird ? "text-yellow-600" : "text-slate-700"} text-xl font-bold`}>
-                                                                {it.__value.toLocaleString()}
-                                                            </div>
-
+                                                        <div key={it.__id} className={`grid grid-cols-12 items-center gap-4 p-3 rounded-lg transition-all duration-600 ${styleClass} ${it.__id === highlightKey ? "highlight-pulse" : ""}`}>
+                                                            <div className="col-span-1 font-bold text-base">{idx + 1}</div>
+                                                            <div className="col-span-2 text-left text-sm font-medium">{active === 'Takhassusat' ? (it.jamia || "-") : (it.ustaz || "-")}</div>
+                                                            <div className={`col-span-4 text-center font-bold ${idx === 0 ? 'text-xl' : 'text-lg'}`}><span className="inline-flex items-center gap-2">{medalForIndex(idx)}<span>{active === 'Takhassusat' ? it.ustaz : it.jamia}</span></span></div>
+                                                            <div className="col-span-3 text-right text-xl font-bold">{it.__value.toLocaleString()}</div>
                                                             <div className="col-span-2 text-right text-lg font-['Bebas_Neue'] text-indigo-600 tracking-wider">{it.unit || "-"}</div>
                                                         </div>
                                                     );
                                                 })}
-
-                                                {(!data.items || data.items.length === 0) && (
-                                                    <div className="text-sm text-slate-500 p-3 text-center">Koi valid row nahi mili (Confirm karein ki 'Jamia Name' aur 'Raqam' column maujood hain aur 'Raqam' value numeric hain).</div>
-                                                )}
+                                                {data.items.length === 0 && <div className="text-sm text-slate-500 p-3 text-center">No valid rows found.</div>}
                                             </div>
                                         </div>
-
-                                        {/* Mobile List View */}
                                         <div className="md:hidden space-y-3">
-                                            {data.items.map((it, idx) => {
-                                                const isTop = idx === 0;
-                                                const isSecond = idx === 1;
-                                                const isThird = idx === 2;
-                                                const medal = medalForIndex(idx);
-                                                const highlight = it.__id === highlightKey;
-                                                const styleClass = isTop
-                                                        ? "bg-yellow-50 border border-yellow-300 shadow-md"
-                                                        : isSecond
-                                                        ? "bg-sky-50 border border-sky-300"
-                                                        : isThird
-                                                        ? "bg-emerald-50 border border-emerald-300"
-                                                        : "bg-white border border-slate-100";
-                                                
-                                                return (
-                                                    <div key={it.__id} className={`p-4 rounded-lg shadow-sm transition-all duration-600 transform ${styleClass} ${highlight ? "highlight-pulse" : ""}`} style={{ willChange: "transform, box-shadow" }}>
-                                                        <div className="flex items-center justify-between border-b pb-2 mb-2">
-                                                            <div className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                                                                <span>{idx + 1}.</span>
-                                                                <span className="truncate max-w-[200px]">{active === 'Takhassusat' ? it.ustaz : it.jamia}</span>
-                                                                <span>{medal}</span>
-                                                            </div>
-                                                            <div className={`text-xl font-bold text-right ml-auto min-w-0 break-all ${isTop ? "text-emerald-600" : isSecond ? "text-sky-600" : isThird ? "text-yellow-600" : "text-slate-700"}`}>
-                                                                {it.__value.toLocaleString()}
-                                                            </div>
-                                                        </div>
-                                                        <div className="text-sm text-slate-600 flex justify-between">
-                                                            <div className="truncate mr-4">
-                                                                <span className="font-semibold">{ustazLabel}:</span> 
-                                                                <span className="text-slate-700 font-medium">
-                                                                    {active === 'Takhassusat' ? (it.jamia || "-") : (it.ustaz || "-")}
-                                                                </span>
-                                                            </div>
-                                                            <div>
-                                                                <span className="font-semibold">Unit:</span> <span className={`font-['Bebas_Neue'] font-bold text-lg text-indigo-600 tracking-wider`}>{it.unit || "-"}</span>
-                                                            </div>
-                                                        </div>
+                                            {data.items.map((it, idx) => (
+                                                <div key={it.__id} className={`p-4 rounded-lg shadow-sm ${idx === 0 ? "bg-yellow-50 border-yellow-300" : "bg-white border-slate-100"} ${it.__id === highlightKey ? "highlight-pulse" : ""}`}>
+                                                    <div className="flex items-center justify-between border-b pb-2 mb-2">
+                                                        <div className="text-xl font-bold text-slate-800 flex items-center gap-2"><span>{idx + 1}.</span><span className="truncate max-w-[200px]">{active === 'Takhassusat' ? it.ustaz : it.jamia}</span><span>{medalForIndex(idx)}</span></div>
+                                                        <div className="text-xl font-bold text-right">{it.__value.toLocaleString()}</div>
                                                     </div>
-                                                );
-                                            })}
-
-                                            {(!data.items || data.items.length === 0) && (
-                                                <div className="text-sm text-slate-500 p-3 text-center">Koi valid row nahi mili (Confirm karein ki 'Jamia Name' aur 'Raqam' column maujood hain aur 'Raqam' value numeric hain).</div>
-                                            )}
+                                                    <div className="text-sm text-slate-600 flex justify-between">
+                                                        <div className="truncate mr-4"><span className="font-semibold">{ustazLabel}:</span> {active === 'Takhassusat' ? (it.jamia || "-") : (it.ustaz || "-")}</div>
+                                                        <div><span className="font-semibold">Unit:</span> <span className="font-['Bebas_Neue'] font-bold text-lg text-indigo-600">{it.unit || "-"}</span></div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {data.items.length === 0 && <div className="text-sm text-slate-500 p-3 text-center">No valid rows found.</div>}
                                         </div>
                                     </div>
                                 </div>
@@ -1019,20 +917,10 @@
             );
         }
 
-        // Render the React component
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(
-            <React.StrictMode>
-                <TelethoneEnhancedLive />
-            </React.StrictMode>
-        );
+        root.render(<React.StrictMode><TelethoneEnhancedLive /></React.StrictMode>);
     </script>
 
 </body>
 </html>
-
-
-
-
-
 
