@@ -270,6 +270,7 @@
         const RAQAM_CANDIDATES = ["Raqam", "RAQAM", "Amount", "Value", "रकम", "राशि"];
         const UNIT_CANDIDATES = ["Unit", "UNIT", "Units"];
         const REGION_CANDIDATES = ["Region", "REGION", "Zone"];
+        const PHOTO_CANDIDATES = ["Photo", "Image", "Pic", "Profile Picture"];
 
         function findColumnByCandidates(cols, candidates) {
             const lower = cols.map((c) => (c || "").toLowerCase().trim());
@@ -284,6 +285,18 @@
                 if (idx >= 0) return cols[idx];
             }
             return null;
+        }
+
+        function getGoogleDriveImageUrl(url) {
+            if (!url || typeof url !== 'string') return null;
+            // This more robust regex extracts the file ID from various Google Drive link formats.
+            const fileIdMatch = url.match(/[-\w]{25,}/);
+            if (fileIdMatch && fileIdMatch[0]) {
+                const fileId = fileIdMatch[0];
+                // Using the 'thumbnail' endpoint is often more reliable for direct embedding.
+                return `https://drive.google.com/thumbnail?id=${fileId}`;
+            }
+            return url; // Return original URL if it's not a standard share link
         }
 
         function medalForIndex(i) {
@@ -332,13 +345,13 @@
 
             const matchups = [
                 { id: 1, teamA: 'Ajmer', teamB: 'Dehli' },
-                { id: 2, teamA: 'Mumbai', teamB: 'HYDERABAD & BENGALORE' },
+                { id: 2, teamA: 'Mumbai', teamB: 'HYDERABAD & Banglore' },
                 { id: 3, teamA: 'Kolkata', teamB: 'HYDERABAD' }
             ];
 
             const calculateScore = (teamName) => {
-                if (teamName === 'HYDERABAD & BENGALORE') {
-                    return getUnit('HYDERABAD') + getUnit('BENGALORE');
+                if (teamName === 'HYDERABAD & Banglore') {
+                    return getUnit('HYDERABAD') + getUnit('Banglore');
                 }
                 return getUnit(teamName);
             };
@@ -427,8 +440,9 @@
         };
 
         function TelethoneEnhancedLive() {
-            const options = Object.keys(DEFAULT_SHEET_CONFIGS);
-            const [active, setActive] = useState("Ibtidaiya"); 
+            const allOptions = Object.keys(DEFAULT_SHEET_CONFIGS);
+            const [active, setActive] = useState("Result"); 
+            const [visibleOptions, setVisibleOptions] = useState(allOptions);
 
             const [overrides, setOverrides] = useState(() => {
                 try {
@@ -454,7 +468,7 @@
             const [highlightKey, setHighlightKey] = useState(null);
             const pollRef = useRef(null);
             
-            const targetDate = new Date('October 03, 2025 22:00:00 GMT+0530'); 
+            const targetDate = new Date('October 01, 2025 21:30:00 GMT+0530'); 
             const [countdown, setCountdown] = useState(calculateTimeRemaining(targetDate));
             const [resultData, setResultData] = useState({});
             const [isResultLoading, setResultLoading] = useState(false);
@@ -472,6 +486,36 @@
             const [regionData, setRegionData] = useState({});
             const [isRegionLoading, setRegionLoading] = useState(true);
             const [regionError, setRegionError] = useState(null);
+
+            // Effect for time-based visibility of tabs
+            useEffect(() => {
+                const checkTimeBasedVisibility = () => {
+                    const now = new Date();
+                    const tenMinutesBefore = new Date(targetDate.getTime() - 10 * 60 * 1000);
+                    const fiveMinutesAfter = new Date(targetDate.getTime() + 5 * 60 * 1000);
+
+                    const inResultWindow = now >= tenMinutesBefore && now < fiveMinutesAfter;
+
+                    if (inResultWindow) {
+                        // If options are not already restricted, restrict them
+                        if (visibleOptions.length > 1) {
+                            setVisibleOptions(["Result"]);
+                            setActive("Result");
+                        }
+                    } else {
+                        // If options are restricted but shouldn't be, restore them
+                        if (visibleOptions.length <= 1) {
+                            setVisibleOptions(allOptions);
+                        }
+                    }
+                };
+
+                checkTimeBasedVisibility(); // Initial check
+                const visibilityTimer = setInterval(checkTimeBasedVisibility, 15000); // Check every 15 seconds
+
+                return () => clearInterval(visibilityTimer);
+            }, [visibleOptions]);
+
 
             function getActiveConfig() {
                 const cfg = DEFAULT_SHEET_CONFIGS[active] || { id: "", sheet: "Sheet1" };
@@ -543,7 +587,7 @@
             async function loadOverallRank() {
                 if (!isRankDataLoaded) setRankLoading(true);
                 setRankError(null);
-                const sheetOptions = options.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
+                const sheetOptions = allOptions.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
                 
                 const fetchPromises = sheetOptions.map(async (opt) => {
                     const cfg = DEFAULT_SHEET_CONFIGS[opt];
@@ -589,7 +633,7 @@
             async function loadAllResults() {
                 setResultLoading(true);
                 setResultError(null);
-                const sheetOptions = options.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
+                const sheetOptions = allOptions.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
 
                 const fetchPromises = sheetOptions.map(async (opt) => {
                     const cfg = DEFAULT_SHEET_CONFIGS[opt];
@@ -601,15 +645,22 @@
                         const jamiaCol = findColumnByCandidates(cols, JAMIA_CANDIDATES);
                         const ustazCol = findColumnByCandidates(cols, USTAZ_CANDIDATES);
                         const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
+                        const photoCol = findColumnByCandidates(cols, PHOTO_CANDIDATES);
+
                         if (!jamiaCol || !raqamCol) return { className: opt, winners: [], error: "Missing Columns" };
 
                         const parsed = rows
-                            .map((r, idx) => ({ 
-                                __id: idx, 
-                                ustaz: String(r[ustazCol] || "").trim(), 
-                                jamia: String(r[jamiaCol] || "").trim(), 
-                                __value: parseNumericValue(r[raqamCol]) 
-                            }))
+                            .map((r, idx) => {
+                                const value = parseNumericValue(r[raqamCol]);
+                                return {
+                                    __id: idx,
+                                    ustaz: String(r[ustazCol] || "").trim(),
+                                    jamia: String(r[jamiaCol] || "").trim(),
+                                    __value: value,
+                                    unit: formatUnit(value),
+                                    photoUrl: photoCol ? getGoogleDriveImageUrl(r[photoCol]) : null
+                                };
+                            })
                             .filter(x => x.jamia !== "" && !Number.isNaN(x.__value));
                         parsed.sort((a, b) => b.__value - a.__value);
                         return { className: opt, winners: parsed.slice(0, 3) };
@@ -637,7 +688,7 @@
                 setRegionLoading(true); // Always set loading to true when starting a fetch
                 setRegionError(null);
                 
-                const sheetOptions = options.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
+                const sheetOptions = allOptions.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
                 const regionTotals = {};
 
                 const fetchPromises = sheetOptions.map(async (opt) => {
@@ -748,7 +799,7 @@
 
                         <nav className="mb-4">
                             <div className="hidden md:flex flex-wrap gap-2 justify-center">
-                                {options.map((opt) => {
+                                {visibleOptions.map((opt) => {
                                     const cfg = DEFAULT_SHEET_CONFIGS[opt];
                                     const id = overrides[opt] ?? cfg.id ?? "";
                                     const valid = opt.includes("Rank") || opt.includes("Result") || opt.includes("Competition") || isValidSheetId(id); 
@@ -770,7 +821,7 @@
 
                             <div className="md:hidden">
                                 <select value={active} onChange={(e) => setActive(e.target.value)} className="block w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm">
-                                    {options.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                                    {visibleOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
                                 </select>
                             </div>
                         </nav>
@@ -828,7 +879,7 @@
                                 </div>
                             ) : active === "Result" ? (
                                 <div className="bg-white border rounded-lg p-6 text-center shadow-lg">
-                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">Special Day Majlis Talimi Umoor</h2>
+                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">01-10-2025</h2>
                                     {countdown.expired ? (
                                         <>
                                             <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announced!</div>
@@ -837,15 +888,26 @@
                                                     {Object.keys(resultData).map(className => (
                                                         <div key={className} className="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm">
                                                             <h3 className="text-xl font-bold text-slate-700 mb-3 border-b pb-2">{className} Winners</h3>
-                                                            <div className="space-y-2">
+                                                            <div className="space-y-4">
                                                                 {resultData[className].map((item, index) => (
-                                                                    <div key={index} className={`flex items-center p-3 rounded-lg ${index === 0 ? "bg-yellow-100" : "bg-slate-100"}`}>
-                                                                        <span className="text-2xl mr-3">{medalForIndex(index)}</span>
-                                                                        <div className="flex-grow text-left">
-                                                                            <p className="text-base font-semibold text-slate-800">{item.jamia}</p>
-                                                                            <p className="text-xs text-slate-500">{item.ustaz}</p>
+                                                                    <div key={index} className={`p-4 rounded-xl text-center transition-all duration-300 shadow-md ${index === 0 ? "bg-gradient-to-br from-amber-100 to-yellow-200 border-amber-300" : "bg-gradient-to-br from-slate-50 to-gray-100 border-slate-200"} border`}>
+                                                                        <img
+                                                                            src={item.photoUrl || 'https://placehold.co/200x200/e2e8f0/64748b?text=Photo'}
+                                                                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/200x200/e2e8f0/64748b?text=Error'; }}
+                                                                            alt={`Winner ${item.jamia}`}
+                                                                            className="w-32 h-32 md:w-40 md:h-40 mx-auto rounded-full object-cover border-8 border-white shadow-xl mb-4"
+                                                                        />
+                                                                        <div className="flex-grow text-center">
+                                                                            <p className={`text-xl font-bold ${index === 0 ? 'text-amber-800' : 'text-slate-800'}`}>{item.jamia}</p>
+                                                                            <p className="text-md text-slate-500 mb-3">{item.ustaz}</p>
                                                                         </div>
-                                                                        <span className="font-bold text-lg text-indigo-700">{item.__value.toLocaleString()}</span>
+                                                                        <div className={`inline-flex items-center justify-center p-3 rounded-lg ${index === 0 ? 'bg-amber-200' : 'bg-slate-200'}`}>
+                                                                            <span className="text-4xl mr-3">{medalForIndex(index)}</span>
+                                                                            <div>
+                                                                                 <span className="font-extrabold text-3xl font-['Bebas_Neue'] tracking-wider text-indigo-700">{item.unit}</span>
+                                                                                 <span className="block text-xs text-slate-600 -mt-1">UNITS</span>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
                                                                 ))}
                                                             </div>
@@ -856,7 +918,7 @@
                                         </>
                                     ) : (
                                         <>
-                                            <div className="text-xl font-medium text-slate-600 mb-6">Results will be announced at 10:15pm!</div>
+                                            <div className="text-xl font-medium text-slate-600 mb-6">Results will be announced at 9:30pm!</div>
                                             <div className="flex justify-center items-end gap-4 md:gap-8 font-bold">
                                                 {Object.entries({ Days: countdown.days, Hours: countdown.hours, Minutes: countdown.minutes, Seconds: countdown.seconds }).map(([label, value]) => (
                                                     <div key={label} className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] shadow-lg">
@@ -941,8 +1003,4 @@
 
 </body>
 </html>
-
-
-
-
 
