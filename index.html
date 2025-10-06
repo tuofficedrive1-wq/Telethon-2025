@@ -12,6 +12,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Bowlby+One+SC&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Gochi+Hand&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Fredoka+One&display=swap" rel="stylesheet">
+    <!-- html2canvas for poster download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -53,21 +58,14 @@
             transition: all 0.5s ease-in-out;
             will-change: transform, box-shadow;
         }
-        /* Hide loading when data is already present (removed from logic, but keeping style for other tabs) */
-        .loading-bg {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.6);
-            z-index: 10;
-        }
     </style>
 </head>
 <body class="bg-slate-100">
 
     <div id="root"></div>
+    <!-- This div is for rendering the poster off-screen before download -->
+    <div id="poster-container" style={{ position: 'absolute', left: '-9999px', top: 0 }}></div>
+
 
     <!-- React CDN -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -174,8 +172,6 @@
             "Sale Duwam": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Sale Duwam" },
             "Ula": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Ula" },
             "Saniya": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Saniya" },
-            "Salisa": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Salisa" },
-            "Rabia": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Rabia" },
             "Khamisa": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Khamisa" },
             "Sadisa": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Sadisa" },
             "Sabia": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Sabia" },
@@ -289,14 +285,12 @@
 
         function getGoogleDriveImageUrl(url) {
             if (!url || typeof url !== 'string') return null;
-            // This more robust regex extracts the file ID from various Google Drive link formats.
             const fileIdMatch = url.match(/[-\w]{25,}/);
             if (fileIdMatch && fileIdMatch[0]) {
                 const fileId = fileIdMatch[0];
-                // Using the 'thumbnail' endpoint is often more reliable for direct embedding.
-                return `https://drive.google.com/thumbnail?id=${fileId}`;
+                return `https://lh3.googleusercontent.com/d/${fileId}`;
             }
-            return url; // Return original URL if it's not a standard share link
+            return url;
         }
 
         function medalForIndex(i) {
@@ -333,6 +327,182 @@
             
             return isInteger ? Math.round(n) : n;
         }
+
+        // --- New Winner Poster Component (Podium Style based on user code) ---
+        const PodiumPoster = ({ data }) => {
+            if (!data) return null;
+            const { className, winners, date } = data;
+            const sortedWinners = [...winners].sort((a, b) => b.__value - a.__value);
+
+            const WinnerCard = ({ winner, rank }) => {
+                const isFirst = rank === 1;
+                return (
+                    <div style={{
+                        backgroundColor: '#ffffff', borderRadius: '12px', padding: '10px',
+                        boxShadow: '0 4px 15px rgba(0,0,0,0.1)', position: 'relative', textAlign: 'center',
+                        width: isFirst ? '240px' : '210px',
+                        marginBottom: isFirst ? '0' : '30px',
+                    }}>
+                        <div style={{ position: 'absolute', top: '-20px', right: '10px', zIndex: 10 }}>
+                            <div style={{
+                                width: '40px', height: '40px', background: '#1976d2', borderRadius: '50%',
+                                display: 'flex', justifyContent: 'center', alignItems: 'center',
+                                color: 'white', fontSize: '20px', fontWeight: 'bold', border: '3px solid white',
+                                position: 'relative', zIndex: 2
+                            }}>{rank}</div>
+                            <div style={{ position: 'absolute', top: '10px', left: '50%', transform: 'translateX(-50%)', zIndex: 1 }}>
+                               <div style={{content: "''", position: 'absolute', width: '15px', height: '35px', background: '#1e88e5', top: 0, left: '-10px', transform: 'rotate(-35deg)', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}></div>
+                               <div style={{content: "''", position: 'absolute', width: '15px', height: '35px', background: '#1e88e5', top: 0, left: '-3px', transform: 'rotate(35deg)', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}></div>
+                            </div>
+                        </div>
+                        <img src={winner.photoUrl || 'https://placehold.co/240x240/e0e0e0/ffffff?text=?'} alt={winner.jamia} 
+                            style={{
+                                width: '100%', height: isFirst ? '240px' : '200px', objectFit: 'cover',
+                                borderRadius: '8px', margin: '10px 0'
+                            }}/>
+                        <div style={{ marginTop: '10px', color: '#212121' }}>
+                            <div style={{ fontWeight: 'bold', fontSize: '18px' }}>{winner.ustaz}</div>
+                            <div style={{ fontSize: '16px', color: '#616161' }}>{winner.jamia}</div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div id="poster-to-download" style={{
+                    width: '800px', height: '800px', background: 'linear-gradient(to bottom, #fdeec9, #e0f7fa)',
+                    position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column',
+                    alignItems: 'center', padding: '40px', boxSizing: 'border-box', fontFamily: "'Poppins', sans-serif"
+                }}>
+                     <svg viewBox="0 0 100 100" style={{position: 'absolute', bottom: '150px', left: '20px', width: '200px', opacity: '0.08', transform: 'rotate(-15deg)'}}>
+                        <path d="M 30 90 L 70 90 L 70 80 L 30 80 Z" stroke="#a0aec0" strokeWidth="2" fill="none" />
+                        <path d="M 40 80 L 60 80 L 60 70 L 55 65 L 45 65 L 40 70 Z" stroke="#a0aec0" strokeWidth="2" fill="none" />
+                        <path d="M 50 65 C 50 65 50 40 50 40" stroke="#a0aec0" strokeWidth="2" fill="none" />
+                        <path d="M 50 40 C 30 40 30 20 50 20 C 70 20 70 40 50 40" stroke="#a0aec0" strokeWidth="2" fill="none" />
+                        <path d="M 30 30 C 20 30 20 40 30 40" stroke="#a0aec0" strokeWidth="2" fill="none" />
+                        <path d="M 70 30 C 80 30 80 40 70 40" stroke="#a0aec0" strokeWidth="2" fill="none" />
+                    </svg>
+                    <svg viewBox="0 0 100 100" style={{position: 'absolute', bottom: '150px', right: '20px', width: '200px', opacity: '0.08', transform: 'rotate(15deg) scaleX(-1)'}}>
+                        <path d="M 30 90 L 70 90 L 70 80 L 30 80 Z" stroke="#a0aec0" strokeWidth="2" fill="none" />
+                        <path d="M 40 80 L 60 80 L 60 70 L 55 65 L 45 65 L 40 70 Z" stroke="#a0aec0" strokeWidth="2" fill="none" />
+                        <path d="M 50 65 C 50 65 50 40 50 40" stroke="#a0aec0" strokeWidth="2" fill="none" />
+                        <path d="M 50 40 C 30 40 30 20 50 20 C 70 20 70 40 50 40" stroke="#a0aec0" strokeWidth="2" fill="none" />
+                        <path d="M 30 30 C 20 30 20 40 30 40" stroke="#a0aec0" strokeWidth="2" fill="none" />
+                        <path d="M 70 30 C 80 30 80 40 70 40" stroke="#a0aec0" strokeWidth="2" fill="none" />
+                    </svg>
+
+                    <div style={{ textAlign: 'center', zIndex: 1, marginBottom: '20px' }}>
+                        <h1 style={{ fontFamily: "'Fredoka One', cursive", fontSize: '80px', fontWeight: 'bold', background: 'linear-gradient(to bottom, #1565c0, #42a5f5)', WebkitBackgroundClip: 'text', backgroundClip: 'text', color: 'transparent', margin: 0, lineHeight: 1 }}>TELETHON-2025</h1>
+                        <h2 style={{ color: '#546e7a', fontSize: '24px', fontWeight: 'bold', marginTop: '10px', letterSpacing: '1px' }}>TOP 3 WINNERS - {className.toUpperCase()}</h2>
+                    </div>
+                    
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'flex-end', gap: '20px', width: '100%', flexGrow: 1, zIndex: 1, marginTop: '20px' }}>
+                        {sortedWinners[1] && <WinnerCard winner={sortedWinners[1]} rank={2} />}
+                        {sortedWinners[0] && <WinnerCard winner={sortedWinners[0]} rank={1} />}
+                        {sortedWinners[2] && <WinnerCard winner={sortedWinners[2]} rank={3} />}
+                    </div>
+
+                    <div style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#1565c0', fontWeight: 'bold', fontSize: '16px', borderTop: '2px solid #aed6f1', paddingTop: '15px', zIndex: 2 }}>
+                        <span>MAJLIS TALIMI UMOOR INDIA</span>
+                        <span>{date}</span>
+                    </div>
+                </div>
+            );
+        };
+        
+        // --- Top List Poster Component ---
+        const ListPoster = ({ data }) => {
+            if (!data) return null;
+            const { className, winners, date, title } = data;
+            const isTakhassusat = className === 'Takhassusat';
+            const subTitle = title.replace('TELETHON 2025 ', '') + ' WINNERS';
+
+            return (
+                <div id="poster-to-download" style={{
+                    width: '1200px',
+                    height: 'auto',
+                    minHeight: '675px',
+                    padding: '32px',
+                    background: 'linear-gradient(135deg, #f0f9ff, #eef2ff)',
+                    fontFamily: "'Inter', sans-serif",
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}>
+                    <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                        <h1 style={{ fontFamily: "'Bebas Neue', cursive", fontSize: '72px', color: '#1e3a8a', letterSpacing: '2px', margin: 0 }}>TELETHON 2025</h1>
+                        <p style={{ fontFamily: "'Bebas Neue', cursive", fontSize: '48px', color: '#6366f1', letterSpacing: '2px', margin: '-10px 0 0 0' }}>{subTitle}</p>
+                        <h2 style={{ fontFamily: "'Bowlby One SC', cursive", fontSize: '60px', color: '#0ea5e9', textTransform: 'uppercase', margin: 0 }}>{className}</h2>
+                    </div>
+                    
+                    <div style={{ flexGrow: 1 }}>
+                         <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '80px 200px 1fr 200px 200px',
+                            alignItems: 'center',
+                            gap: '16px',
+                            padding: '12px 16px',
+                            background: '#dbeafe',
+                            borderRadius: '12px',
+                            fontWeight: 'bold',
+                            fontSize: '20px',
+                            color: '#1e3a8a',
+                            marginBottom: '12px'
+                        }}>
+                            <span>Rank</span>
+                            <span>{isTakhassusat ? 'Jamia Name' : 'Ustaz Name'}</span>
+                            <span style={{ textAlign: 'center' }}>{isTakhassusat ? 'Class' : 'Jamia Name'}</span>
+                            <span style={{ textAlign: 'right' }}>Raqam</span>
+                            <span style={{ textAlign: 'right' }}>Unit</span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {winners.map((winner, idx) => {
+                                const rankColors = [
+                                    'rgba(252, 211, 77, 0.3)', // Gold
+                                    'rgba(192, 192, 192, 0.3)', // Silver
+                                    'rgba(205, 127, 50, 0.3)'  // Bronze
+                                ];
+                                const bgColor = idx < 3 ? rankColors[idx] : 'rgba(255,255,255,0.7)';
+                                const textColor = '#1e293b';
+
+                                return (
+                                    <div key={winner.__id} style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: '80px 200px 1fr 200px 200px',
+                                        alignItems: 'center',
+                                        gap: '16px',
+                                        padding: '12px 16px',
+                                        background: bgColor,
+                                        borderRadius: '12px',
+                                        fontSize: '22px',
+                                        color: textColor,
+                                        fontWeight: 500
+                                    }}>
+                                        <span style={{fontWeight: 'bold', fontSize: '24px'}}>{idx + 1}</span>
+                                        <span>{isTakhassusat ? winner.jamia : winner.ustaz}</span>
+                                        <span style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                                            {medalForIndex(idx)} {isTakhassusat ? winner.ustaz : winner.jamia}
+                                        </span>
+                                        <span style={{ textAlign: 'right', fontWeight: 'bold' }}>{winner.__value.toLocaleString()}</span>
+                                        <span style={{ 
+                                            textAlign: 'right', 
+                                            fontFamily: "'Bebas Neue', cursive",
+                                            fontSize: '28px',
+                                            color: '#4f46e5'
+                                        }}>{winner.unit}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    
+                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', paddingTop: '16px', borderTop: '2px solid #dbeafe'}}>
+                        <p style={{ color: '#475569', fontSize: '18px', fontWeight: '600' }}>Majlis Talimi Umoor India</p>
+                        <p style={{ color: '#475569', fontSize: '18px', fontWeight: '600' }}>Date: {date}</p>
+                    </div>
+                </div>
+            );
+        };
         
         // --- Region Competition Component ---
         const RegionCompetitionView = ({ regionData, isLoading, error }) => {
@@ -356,7 +526,6 @@
                 return getUnit(teamName);
             };
             
-            // Initial loader, only shown when no data is present yet
             if (isLoading && Object.keys(regionData).length === 0) {
                  return (
                     <div className="flex justify-center items-center p-10">
@@ -366,20 +535,14 @@
                 );
             }
 
-            if (error) {
-                return <div className="text-center p-4 text-rose-600">{error}</div>;
-            }
+            if (error) return <div className="text-center p-4 text-rose-600">{error}</div>;
             
-            // Empty state if loading is finished and still no data
             if (Object.keys(regionData).length === 0 && !isLoading) {
                  return <div className="text-center p-10 text-slate-500">Koi region data nahi mila. Sheets mein 'Region' column check karein.</div>;
             }
 
-            // Main view, which is always rendered if data exists, even during updates
             return (
                 <div className="bg-white border rounded-lg p-4 shadow-lg relative">
-                    {/* Background loader for updates has been removed */}
-
                     <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-6 text-center">Region Competition Scoreboard</h2>
                     <div className="space-y-6">
                         {matchups.map(match => {
@@ -389,7 +552,6 @@
 
                             return (
                                 <div key={match.id} className="bg-slate-50 border border-slate-200 p-3 md:p-4 rounded-2xl shadow-md transform hover:scale-105 transition-transform duration-300">
-                                    {/* Mobile View: hidden on md and up */}
                                     <div className="md:hidden">
                                         <div className={`flex justify-between items-center p-2 rounded-lg mb-2 ${winner === 'A' ? 'bg-green-50' : ''}`}>
                                             <span className={`text-lg font-['Bowlby_One_SC'] uppercase ${winner === 'A' ? 'text-green-600' : 'text-slate-700'}`}>{match.teamA}</span>
@@ -406,15 +568,11 @@
                                         </div>
                                     </div>
                                     
-                                    {/* Desktop View: hidden on small screens */}
                                     <div className="hidden md:flex justify-around items-center text-center">
-                                        {/* Team A */}
                                         <div className={`flex-1 flex flex-col items-center p-2 rounded-lg ${winner === 'A' ? 'font-extrabold' : ''}`}>
                                             <div className={`text-xl md:text-2xl font-['Bowlby_One_SC'] uppercase ${winner === 'A' ? 'text-green-600' : 'text-slate-700'}`}>{match.teamA}</div>
                                             <div className="text-xs text-slate-500">Region</div>
                                         </div>
-                                        
-                                        {/* Scores */}
                                         <div className="flex items-center">
                                              <div className={`text-3xl md:text-5xl font-['Bebas_Neue'] p-2 rounded-lg tracking-wider ${winner === 'A' ? 'text-green-500' : 'text-slate-500'}`}>
                                                 <AnimatedNumber value={scoreA} formatter={(val) => val.toFixed(1)} />
@@ -424,8 +582,6 @@
                                                  <AnimatedNumber value={scoreB} formatter={(val) => val.toFixed(1)} />
                                              </div>
                                         </div>
-
-                                        {/* Team B */}
                                         <div className={`flex-1 flex flex-col items-center p-2 rounded-lg ${winner === 'B' ? 'font-extrabold' : ''}`}>
                                              <div className={`text-xl md:text-2xl font-['Bowlby_One_SC'] uppercase ${winner === 'B' ? 'text-green-600' : 'text-slate-700'}`}>{match.teamB}</div>
                                             <div className="text-xs text-slate-500">Region</div>
@@ -443,7 +599,6 @@
             const allOptions = Object.keys(DEFAULT_SHEET_CONFIGS);
             const [active, setActive] = useState("Result"); 
             const [visibleOptions, setVisibleOptions] = useState(allOptions);
-
             const [overrides, setOverrides] = useState(() => {
                 try {
                     const raw = localStorage.getItem(LOCALSTORAGE_KEY);
@@ -467,25 +622,21 @@
             const [sheetInput, setSheetInput] = useState("");
             const [highlightKey, setHighlightKey] = useState(null);
             const pollRef = useRef(null);
-            
             const targetDate = new Date('October 01, 2025 21:30:00 GMT+0530'); 
             const [countdown, setCountdown] = useState(calculateTimeRemaining(targetDate));
             const [resultData, setResultData] = useState({});
             const [isResultLoading, setResultLoading] = useState(false);
             const [resultError, setResultError] = useState(null);
-
             const [overallRankData, setOverallRankData] = useState([]);
-            const [overallTotalAmount, setOverallTotalAmount] = useState(0); 
-            const [overallTotalUnit, setOverallTotalUnit] = useState(0);
-            
             const [isRankLoading, setRankLoading] = useState(true);
             const [isRankDataLoaded, setIsRankDataLoaded] = useState(false);
             const [rankError, setRankError] = useState(null);
-            
-            // Region Competition States
             const [regionData, setRegionData] = useState({});
             const [isRegionLoading, setRegionLoading] = useState(true);
             const [regionError, setRegionError] = useState(null);
+            const [posterData, setPosterData] = useState(null);
+            const [isDownloading, setIsDownloading] = useState(false);
+            const posterContainerRef = useRef(null);
 
             // Effect for time-based visibility of tabs
             useEffect(() => {
@@ -493,28 +644,86 @@
                     const now = new Date();
                     const tenMinutesBefore = new Date(targetDate.getTime() - 10 * 60 * 1000);
                     const fiveMinutesAfter = new Date(targetDate.getTime() + 5 * 60 * 1000);
-
                     const inResultWindow = now >= tenMinutesBefore && now < fiveMinutesAfter;
 
                     if (inResultWindow) {
-                        // If options are not already restricted, restrict them
                         if (visibleOptions.length > 1) {
                             setVisibleOptions(["Result"]);
                             setActive("Result");
                         }
                     } else {
-                        // If options are restricted but shouldn't be, restore them
                         if (visibleOptions.length <= 1) {
                             setVisibleOptions(allOptions);
                         }
                     }
                 };
 
-                checkTimeBasedVisibility(); // Initial check
-                const visibilityTimer = setInterval(checkTimeBasedVisibility, 15000); // Check every 15 seconds
+                checkTimeBasedVisibility();
+                const visibilityTimer = setInterval(checkTimeBasedVisibility, 15000); 
 
                 return () => clearInterval(visibilityTimer);
             }, [visibleOptions]);
+
+            useEffect(() => {
+                posterContainerRef.current = document.getElementById('poster-container');
+                 // Load data for special tabs once on initial mount so it's ready when the user clicks them.
+                loadOverallRank();
+                loadRegionData();
+                if (calculateTimeRemaining(targetDate).expired) {
+                    loadAllResults();
+                }
+            }, []);
+            
+            // Poster Generation Effect
+            useEffect(() => {
+                if (!posterData) return;
+
+                const generateImage = async () => {
+                    await new Promise(resolve => setTimeout(resolve, 100)); // Wait for render
+                    const element = document.getElementById('poster-to-download');
+                    if(element && window.html2canvas) {
+                        try {
+                            const canvas = await html2canvas(element, { useCORS: true, scale: 2 });
+                            const dataUrl = canvas.toDataURL('image/png');
+                            const link = document.createElement('a');
+                            link.href = dataUrl;
+                            link.download = `Telethone-Winners-${posterData.className.replace(/\s+/g, '-')}.png`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                        } catch(err) {
+                             console.error("Error generating poster:", err);
+                             alert("Poster download karne mein error aaya. Koshish karein ki photo links sahi hon.");
+                        } finally {
+                             setPosterData(null); // Clean up
+                             setIsDownloading(false);
+                        }
+                    }
+                };
+                
+                generateImage();
+
+            }, [posterData]);
+
+            const handleDownloadResultPoster = (className, winners) => {
+                 setIsDownloading(true);
+                 const today = new Date().toLocaleDateString('en-GB');
+                 setPosterData({ type: 'podium', className, winners, date: today });
+            };
+
+            const handleDownloadClassPoster = (count) => {
+                const today = new Date().toLocaleDateString('en-GB');
+                
+                setIsDownloading(true);
+                const winners = data.items.slice(0, count);
+                setPosterData({ 
+                    type: 'list', 
+                    className: active, 
+                    winners, 
+                    date: today, 
+                    title: `TELETHON 2025 TOP ${count}` 
+                });
+            };
 
 
             function getActiveConfig() {
@@ -533,7 +742,7 @@
                     return;
                 }
 
-                if (!isDataLoaded) setLoading(true); 
+                setLoading(true);
                 setError(null);
                 try {
                     const { cols, items: rows } = await fetchSheetData(id, sheet);
@@ -577,7 +786,7 @@
                 } catch (err) {
                     console.error(err);
                     setError(err.message || String(err));
-                    if (!isDataLoaded) setData({ items: [] });
+                    setData({ items: [] });
                 } finally {
                     setLoading(false);
                     setIsDataLoaded(true);
@@ -585,7 +794,7 @@
             }
             
             async function loadOverallRank() {
-                if (!isRankDataLoaded) setRankLoading(true);
+                setRankLoading(true);
                 setRankError(null);
                 const sheetOptions = allOptions.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
                 
@@ -614,14 +823,7 @@
                 try {
                     const results = await Promise.all(fetchPromises);
                     const validResults = results.filter(r => r.totalAmount > 0 || (r.error && r.error.includes("Missing Raqam Column")));
-                    
-                    const grandTotalAmount = results.reduce((sum, r) => sum + r.totalAmount, 0);
-                    setOverallTotalAmount(grandTotalAmount);
-                    setOverallTotalUnit(grandTotalAmount / UNIT_DIVISOR);
-                    
-                    validResults.sort((a, b) => b.totalAmount - a.totalAmount);
-
-                    setOverallRankData(validResults);
+                    setOverallRankData(validResults.sort((a, b) => b.totalAmount - a.totalAmount));
                 } catch (e) {
                     setRankError("Sabhi rank data ko process nahi kiya ja saka.");
                 } finally {
@@ -631,6 +833,9 @@
             }
 
             async function loadAllResults() {
+                if (Object.keys(resultData).length > 0 || isResultLoading) {
+                    return; // Data already fetched or is being fetched, no need to run again
+                }
                 setResultLoading(true);
                 setResultError(null);
                 const sheetOptions = allOptions.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
@@ -685,9 +890,8 @@
             }
             
             async function loadRegionData() {
-                setRegionLoading(true); // Always set loading to true when starting a fetch
+                setRegionLoading(true);
                 setRegionError(null);
-                
                 const sheetOptions = allOptions.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
                 const regionTotals = {};
 
@@ -701,10 +905,7 @@
                         const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
                         const regionCol = findColumnByCandidates(cols, REGION_CANDIDATES);
 
-                        if (!raqamCol || !regionCol) {
-                            console.warn(`Sheet "${opt}" is missing 'Raqam' or 'Region' column.`);
-                            return;
-                        }
+                        if (!raqamCol || !regionCol) return;
                         
                         rows.forEach((r) => {
                             const region = r[regionCol] ? String(r[regionCol]).trim() : null;
@@ -767,28 +968,30 @@
                 
                 return () => clearInterval(pollRef.current);
             }, [active, overrides, countdown.expired]);
-
-            function handleSetSheetId(e) {
-                e.preventDefault();
-                const possible = parseSheetIdFromUrl(sheetInput);
-                if (!possible) {
-                    setError("Invalid Sheet URL/ID.");
-                    return;
-                }
-                setOverrides((prev) => ({ ...prev, [active]: possible }));
-                setSheetInput("");
-                setError(null);
-            }
             
             const ustazLabel = active === 'Takhassusat' ? 'Jamia Name' : 'Ustaz Name';
             const jamiaLabel = active === 'Takhassusat' ? 'Class' : 'Jamia Name';
 
-            const showFullScreenLoader = (active !== "Overall Rank" && active !== "Region Competition" && isLoading && !isDataLoaded) || 
+            const showFullScreenLoader = (isLoading && !isDataLoaded) || 
                                          (active === "Overall Rank" && isRankLoading && !isRankDataLoaded) ||
                                          (active === "Region Competition" && isRegionLoading && Object.keys(regionData).length === 0);
+            
+            const classesForTop10 = ["Ibtidaiya", "Sale Awwal", "Sale Duwam", "Ula", "Saniya", "Khamisa"];
+            const classesForTop3 = ["Sadisa", "Sabia", "Doratul Hadis", "Takhassusat"];
+            
+            const DownloadIcon = () => (
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z"/>
+                  <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708l3 3z"/>
+                </svg>
+            );
 
             return (
                 <div className="min-h-screen bg-gray-50">
+                    {/* Poster component is rendered off-screen when needed */}
+                    {posterData && posterData.type === 'podium' && ReactDOM.createPortal(<PodiumPoster data={posterData} />, posterContainerRef.current)}
+                    {posterData && posterData.type === 'list' && ReactDOM.createPortal(<ListPoster data={posterData} />, posterContainerRef.current)}
+
                     <div className="max-w-7xl mx-auto p-4 sm:p-6">
                         <header className="mb-6 text-center">
                             <h1 className="text-6xl sm:text-7xl font-['Bebas_Neue'] bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-indigo-600">
@@ -799,24 +1002,15 @@
 
                         <nav className="mb-4">
                             <div className="hidden md:flex flex-wrap gap-2 justify-center">
-                                {visibleOptions.map((opt) => {
-                                    const cfg = DEFAULT_SHEET_CONFIGS[opt];
-                                    const id = overrides[opt] ?? cfg.id ?? "";
-                                    const valid = opt.includes("Rank") || opt.includes("Result") || opt.includes("Competition") || isValidSheetId(id); 
-                                    return (
-                                        <button
-                                            key={opt}
-                                            onClick={() => setActive(opt)}
-                                            className={`px-3 py-2 rounded-2xl font-medium text-sm shadow-sm focus:outline-none transition-transform transform hover:-translate-y-0.5 ${ active === opt ? "bg-sky-600 text-white shadow-lg" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50" }`}
-                                            title={!valid ? "Not configured" : ""}
-                                        >
-                                            <span className="inline-flex items-center gap-2">
-                                                {!opt.includes("Rank") && !opt.includes("Result") && !opt.includes("Competition") && <span className={`w-2 h-2 rounded-full ${valid ? "bg-emerald-400" : "bg-rose-400"}`} />}
-                                                <span>{opt}</span>
-                                            </span>
-                                        </button>
-                                    );
-                                })}
+                                {visibleOptions.map((opt) => (
+                                    <button
+                                        key={opt}
+                                        onClick={() => setActive(opt)}
+                                        className={`px-3 py-2 rounded-2xl font-medium text-sm shadow-sm focus:outline-none transition-transform transform hover:-translate-y-0.5 ${ active === opt ? "bg-sky-600 text-white shadow-lg" : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50" }`}
+                                    >
+                                        <span>{opt}</span>
+                                    </button>
+                                ))}
                             </div>
 
                             <div className="md:hidden">
@@ -879,16 +1073,21 @@
                                 </div>
                             ) : active === "Result" ? (
                                 <div className="bg-white border rounded-lg p-6 text-center shadow-lg">
-                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">01-10-2025</h2>
+                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">06-10-2025</h2>
                                     {countdown.expired ? (
                                         <>
                                             <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announced!</div>
-                                            {isResultLoading ? <div className="text-sm text-slate-500 animate-pulse">Loading...</div> : Object.keys(resultData).length > 0 ? (
+                                            {isResultLoading ? <div className="text-sm text-slate-500 animate-pulse">Loading Results...</div> : Object.keys(resultData).length > 0 ? (
                                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                                     {Object.keys(resultData).map(className => (
-                                                        <div key={className} className="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm">
-                                                            <h3 className="text-xl font-bold text-slate-700 mb-3 border-b pb-2">{className} Winners</h3>
-                                                            <div className="space-y-4">
+                                                        <div key={className} className="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm flex flex-col">
+                                                            <div className="flex justify-between items-center mb-3 border-b pb-2">
+                                                                <h3 className="text-xl font-bold text-slate-700">{className} Winners</h3>
+                                                                <button onClick={() => handleDownloadResultPoster(className, resultData[className])} disabled={isDownloading} className="p-2 text-white bg-sky-500 rounded-lg shadow-sm hover:bg-sky-600 disabled:bg-slate-400 disabled:cursor-not-allowed">
+                                                                    {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <DownloadIcon />}
+                                                                </button>
+                                                            </div>
+                                                            <div className="space-y-4 flex-grow">
                                                                 {resultData[className].map((item, index) => (
                                                                     <div key={index} className={`p-4 rounded-xl text-center transition-all duration-300 shadow-md ${index === 0 ? "bg-gradient-to-br from-amber-100 to-yellow-200 border-amber-300" : "bg-gradient-to-br from-slate-50 to-gray-100 border-slate-200"} border`}>
                                                                         <img
@@ -934,11 +1133,30 @@
                                 <RegionCompetitionView regionData={regionData} isLoading={isRegionLoading} error={regionError} />
                             ) : (
                                 <div className="bg-white border rounded-lg p-4 shadow-lg relative">
-                                    {/* The background "Updating..." indicator that appeared on data refresh has been removed */}
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h2 className="text-xl font-bold text-slate-700">Live Rankings</h2>
+                                        <div className="flex items-center gap-2">
+                                            {classesForTop10.includes(active) && (
+                                                <>
+                                                    <button onClick={() => handleDownloadClassPoster(5)} title="Download Top 5 Poster" disabled={isDownloading || data.items.length === 0} className="p-2 text-white bg-indigo-500 rounded-lg shadow-sm hover:bg-indigo-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                                        {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T5</span></>}
+                                                    </button>
+                                                    <button onClick={() => handleDownloadClassPoster(10)} title="Download Top 10 Poster" disabled={isDownloading || data.items.length === 0} className="p-2 text-white bg-indigo-500 rounded-lg shadow-sm hover:bg-indigo-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                                        {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T10</span></>}
+                                                    </button>
+                                                </>
+                                            )}
+                                             {classesForTop3.includes(active) && (
+                                                 <button onClick={() => handleDownloadClassPoster(3)} title="Download Top 3 Poster" disabled={isDownloading || data.items.length === 0} className="p-2 text-white bg-indigo-500 rounded-lg shadow-sm hover:bg-indigo-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                                    {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T3</span></>}
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
                                     {!isValidSheetId(getActiveConfig().id) && (
                                         <div className="mb-4 p-4 border rounded-xl bg-red-50 border-red-200">
                                             <div className="text-sm font-semibold text-red-700 mb-2">Sheet not configured. Paste Google Sheet URL or ID.</div>
-                                            <form onSubmit={handleSetSheetId} className="flex gap-2">
+                                            <form onSubmit={(e) => { e.preventDefault(); const id = parseSheetIdFromUrl(sheetInput); if(id) setOverrides(p => ({...p, [active]: id})); setSheetInput(''); }} className="flex gap-2">
                                                 <input value={sheetInput} onChange={(e) => setSheetInput(e.target.value)} placeholder="Google Sheet URL or Sheet ID" className="flex-1 px-3 py-2 border rounded-lg focus:ring-sky-500"/>
                                                 <button type="submit" className="px-4 py-2 rounded-lg bg-sky-600 text-white font-medium">Set Sheet</button>
                                             </form>
@@ -968,7 +1186,7 @@
                                                         </div>
                                                     );
                                                 })}
-                                                {data.items.length === 0 && <div className="text-sm text-slate-500 p-3 text-center">No valid rows found.</div>}
+                                                {data.items.length === 0 && !isLoading && <div className="text-sm text-slate-500 p-3 text-center">No valid rows found.</div>}
                                             </div>
                                         </div>
                                         <div className="md:hidden space-y-3">
@@ -984,7 +1202,7 @@
                                                     </div>
                                                 </div>
                                             ))}
-                                            {data.items.length === 0 && <div className="text-sm text-slate-500 p-3 text-center">No valid rows found.</div>}
+                                            {data.items.length === 0 && !isLoading && <div className="text-sm text-slate-500 p-3 text-center">No valid rows found.</div>}
                                         </div>
                                     </div>
                                 </div>
