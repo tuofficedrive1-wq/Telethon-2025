@@ -731,7 +731,7 @@
             useEffect(() => {
                 const checkTimeBasedVisibility = () => {
                     const now = new Date();
-                    const tenMinutesBefore = new Date(targetDate.getTime() - 10 * 60 * 1000);
+                    const fiveMinutesBefore = new Date(targetDate.getTime() - 5 * 60 * 1000);
                     const fiveMinutesAfter = new Date(targetDate.getTime() + 5 * 60 * 1000);
                     const inResultWindow = now >= tenMinutesBefore && now < fiveMinutesAfter;
 
@@ -1334,6 +1334,7 @@
 
 </body>
 </html>
+
 
 
 
