@@ -729,29 +729,33 @@
 
             // Effect for time-based visibility of tabs
             useEffect(() => {
-                const checkTimeBasedVisibility = () => {
+                const visibilityTimer = setInterval(() => {
                     const now = new Date();
-                    const tenMinutesBefore = new Date(targetDate.getTime() - 10 * 60 * 1000);
+                    const fiveMinutesBefore = new Date(targetDate.getTime() - 5 * 60 * 1000);
                     const fiveMinutesAfter = new Date(targetDate.getTime() + 5 * 60 * 1000);
-                    const inResultWindow = now >= tenMinutesBefore && now < fiveMinutesAfter;
-
-                    if (inResultWindow) {
-                        if (visibleOptions.length > 1) {
-                            setVisibleOptions(["Result"]);
-                            setActive("Result");
+                    const inResultWindow = now >= fiveMinutesBefore && now < fiveMinutesAfter;
+                    
+                    setVisibleOptions(currentVisibleOptions => {
+                        if (inResultWindow) {
+                            // If we are in the result window and more than one tab is visible
+                            if (currentVisibleOptions.length > 1) {
+                                setActive("Result"); // Switch to result tab
+                                return ["Result"]; // Show only result tab
+                            }
+                        } else {
+                            // If we are outside the result window and only one tab is visible
+                            if (currentVisibleOptions.length <= 1) {
+                                // Switch back to default tab if the current one is still "Result"
+                                setActive(currentActive => currentActive === "Result" ? "Ibtidaiya" : currentActive);
+                                return allOptions; // Show all tabs again
+                            }
                         }
-                    } else {
-                        if (visibleOptions.length <= 1) {
-                            setVisibleOptions(allOptions);
-                        }
-                    }
-                };
-
-                checkTimeBasedVisibility();
-                const visibilityTimer = setInterval(checkTimeBasedVisibility, 15000); 
+                        return currentVisibleOptions; // No change needed
+                    });
+                }, 1000); // Check every second for better responsiveness
 
                 return () => clearInterval(visibilityTimer);
-            }, [visibleOptions]);
+            }, []); // Run this effect only once when the component mounts
 
             useEffect(() => {
                 posterContainerRef.current = document.getElementById('poster-container');
@@ -1334,11 +1338,6 @@
 
 </body>
 </html>
-
-
-
-
-
 
 
 
