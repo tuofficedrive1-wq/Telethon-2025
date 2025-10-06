@@ -172,6 +172,8 @@
             "Sale Duwam": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Sale Duwam" },
             "Ula": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Ula" },
             "Saniya": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Saniya" },
+            "Salisa": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Salisa" },
+            "Rabia": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Rabia" },
             "Khamisa": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Khamisa" },
             "Sadisa": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Sadisa" },
             "Sabia": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Sabia" },
@@ -326,6 +328,18 @@
             if (Number.isNaN(n)) return NaN;
             
             return isInteger ? Math.round(n) : n;
+        }
+
+        function formatDateTimeForPoster(date) {
+            const options = {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: 'numeric',
+                minute: 'numeric',
+                hour12: true
+            };
+            return new Intl.DateTimeFormat('en-IN', options).format(date).replace(',', '');
         }
 
         // --- New Winner Poster Component (Podium Style based on user code) ---
@@ -711,7 +725,7 @@
             const [sheetInput, setSheetInput] = useState("");
             const [highlightKey, setHighlightKey] = useState(null);
             const pollRef = useRef(null);
-            const targetDate = new Date('October 06, 2025 21:30:00 GMT+0530'); 
+            const targetDate = new Date('October 06, 2025 21:39:00 GMT+0530'); 
             const [countdown, setCountdown] = useState(calculateTimeRemaining(targetDate));
             const [resultData, setResultData] = useState({});
             const [isResultLoading, setResultLoading] = useState(false);
@@ -800,12 +814,12 @@
 
             const handleDownloadResultPoster = (className, winners) => {
                  setIsDownloading(true);
-                 const today = new Date().toLocaleDateString('en-GB');
-                 setPosterData({ type: 'podium', className, winners, date: today });
+                 const now = formatDateTimeForPoster(new Date());
+                 setPosterData({ type: 'podium', className, winners, date: now });
             };
 
             const handleDownloadClassPoster = (count) => {
-                const today = new Date().toLocaleDateString('en-GB');
+                const now = formatDateTimeForPoster(new Date());
                 
                 setIsDownloading(true);
                 const winners = data.items.slice(0, count);
@@ -813,20 +827,20 @@
                     type: 'list', 
                     className: active, 
                     winners, 
-                    date: today, 
+                    date: now, 
                     title: `TELETHON 2025 TOP ${count}` 
                 });
             };
 
             const handleDownloadOverallRankPoster = () => {
                 if (overallRankData.length === 0) return;
-                const today = new Date().toLocaleDateString('en-GB');
+                const now = formatDateTimeForPoster(new Date());
                 setIsDownloading(true);
                 setPosterData({
                     type: 'overall',
                     className: 'Overall-Rank',
                     winners: overallRankData,
-                    date: today,
+                    date: now,
                     title: 'TELETHON 2025 ALL INDIA CLASSIC RANK'
                 });
             };
@@ -1082,7 +1096,7 @@
                                          (active === "Overall Rank" && isRankLoading && !isRankDataLoaded) ||
                                          (active === "Region Competition" && isRegionLoading && Object.keys(regionData).length === 0);
             
-            const classesForTop10 = ["Ibtidaiya", "Sale Awwal", "Sale Duwam", "Ula", "Saniya", "Khamisa"];
+            const classesForTop10 = ["Ibtidaiya", "Sale Awwal", "Sale Duwam", "Ula", "Saniya", "Salisa", "Rabia", "Khamisa"];
             const classesForTop3 = ["Sadisa", "Sabia", "Doratul Hadis", "Takhassusat"];
             
             const DownloadIcon = () => (
@@ -1338,6 +1352,4 @@
 
 </body>
 </html>
-
-
 
