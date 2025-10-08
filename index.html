@@ -721,13 +721,13 @@
 
             const matchups = [
                 { id: 1, teamA: 'Ajmer', teamB: 'Dehli' },
-                { id: 2, teamA: 'Mumbai', teamB: 'HYDERABAD & BENGALORE' },
+                { id: 2, teamA: 'Mumbai', teamB: 'HYDERABAD & Banglore' },
                 { id: 3, teamA: 'Kolkata', teamB: 'HYDERABAD' }
             ];
 
             const calculateScore = (teamName) => {
-                if (teamName === 'HYDERABAD & BENGALORE') {
-                    return getUnit('HYDERABAD') + getUnit('BENGALORE');
+                if (teamName === 'HYDERABAD & Banglore') {
+                    return getUnit('HYDERABAD') + getUnit('Banglore');
                 }
                 return getUnit(teamName);
             };
@@ -830,7 +830,7 @@
             
             // NOTE: To change the result announcement time, modify the date string below.
             // Format: 'YYYY-MM-DDTHH:mm:ss' (e.g., '2025-10-08T21:30:00')
-            const [targetDate, setTargetDate] = useState(new Date('2025-10-08T22:05:00'));
+            const [targetDate, setTargetDate] = useState(new Date('2025-10-08T22:10:00'));
 
             // NOTE: To change the result page heading, modify the text below.
             const resultPageHeading = "Quarter Final Competition";
@@ -1335,7 +1335,7 @@
                             {active === "Overall Rank" ? (
                                 <div className="bg-white border rounded-lg p-4 shadow-lg relative">
                                     <div className="flex justify-between items-center mb-4 border-b pb-2">
-                                        <h2 className="text-xl md:text-2xl font-bold text-slate-800">All India Classic Rank (Quarter Final Competition)</h2>
+                                        <h2 className="text-xl md:text-2xl font-bold text-slate-800">All India Classic Rank</h2>
                                         <div className="flex items-center gap-2">
                                             <button 
                                                 onClick={handleDownloadOverallRankPoster}
@@ -1553,7 +1553,4 @@
 
 </body>
 </html>
-
-
-
 
