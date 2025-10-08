@@ -16,6 +16,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;700&family=Fredoka+One&display=swap" rel="stylesheet">
     <!-- html2canvas for poster download -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 
     <style>
         body {
@@ -187,6 +188,7 @@
         const POLL_INTERVAL_MS = 5000;
         const LOCALSTORAGE_KEY = "telethone_sheet_overrides_enhanced_live";
         const LAST_RESULTS_KEY = "telethone_last_results";
+        const LAST_FETCH_CYCLE_KEY = "telethone_last_fetch_cycle";
         const UNIT_DIVISOR = 7000;
 
         function parseSheetIdFromUrl(input) {
@@ -480,7 +482,7 @@
             if (!data) return null;
             const { className, winners, date, title } = data;
             const isTakhassusat = className === 'Takhassusat';
-            const subTitle = title.replace('TELETHON 2025 ', '') + ' WINNERS';
+            const subTitle = title.replace('TELETHON 2025 ', '') + (title.includes('FULL LIST') ? '' : ' WINNERS');
 
             return (
                 <div id="poster-to-download" style={{
@@ -658,6 +660,56 @@
             );
         };
         
+        const PdfResultPoster = ({ data }) => {
+            if (!data) return null;
+            const { winners, date } = data;
+            const classOrder = Object.keys(DEFAULT_SHEET_CONFIGS).filter(key => winners[key]);
+
+            return (
+                <div id="poster-to-download" style={{
+                    width: '1240px',
+                    padding: '40px',
+                    background: 'white',
+                    fontFamily: "'Inter', sans-serif",
+                    color: '#1e293b',
+                }}>
+                    <div style={{ textAlign: 'center', borderBottom: '2px solid #e2e8f0', paddingBottom: '16px', marginBottom: '24px' }}>
+                        <h1 style={{ fontFamily: "'Bebas Neue', cursive", fontSize: '60px', color: '#1e3a8a', letterSpacing: '2px', margin: 0 }}>TELETHON 2025</h1>
+                        <p style={{ fontFamily: "'Bebas Neue', cursive", fontSize: '40px', color: '#6366f1', letterSpacing: '2px', margin: 0 }}>QUARTER FINAL COMPETITION RESULTS</p>
+                        <p style={{ fontSize: '16px', color: '#475569', marginTop: '8px' }}>Date: {date}</p>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '24px' }}>
+                        {classOrder.map(className => (
+                            <div key={className} style={{ border: '1px solid #cbd5e1', borderRadius: '12px', padding: '16px', backgroundColor: '#f8fafc', breakInside: 'avoid' }}>
+                                <h3 style={{ fontFamily: "'Bowlby One SC', cursive", fontSize: '24px', color: '#1e3a8a', marginBottom: '12px', textAlign: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '8px' }}>
+                                    {className}
+                                </h3>
+                                <ol style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    {winners[className].slice(0, 3).map((winner, idx) => (
+                                        <li key={idx} style={{ display: 'flex', alignItems: 'center', padding: '8px', borderRadius: '6px', background: ['#fffbeb', '#f0f9ff', '#f0fdf4'][idx] }}>
+                                            <span style={{ fontSize: '24px', marginRight: '12px' }}>{medalForIndex(idx)}</span>
+                                            <div>
+                                                <p style={{ fontWeight: '600', fontSize: '16px', margin: 0 }}>{winner.jamia}</p>
+                                                <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>{winner.ustaz}</p>
+                                            </div>
+                                            <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
+                                                 <span style={{ fontFamily: "'Bebas Neue', cursive", fontSize: '22px', color: '#4f46e5' }}>{winner.unit}</span>
+                                                 <span style={{ display: 'block', fontSize: '10px', color: '#64748b', marginTop: '-4px' }}>UNITS</span>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ol>
+                            </div>
+                        ))}
+                    </div>
+                     <div style={{display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '32px', paddingTop: '16px', borderTop: '2px solid #e2e8f0'}}>
+                        <p style={{ color: '#475569', fontSize: '16px', fontWeight: '600' }}>Majlis Talimi Umoor India</p>
+                    </div>
+                </div>
+            );
+        };
+
         // --- Region Competition Component ---
         const RegionCompetitionView = ({ regionData, isLoading, error }) => {
             const getUnit = (regionName) => {
@@ -778,10 +830,9 @@
             
             // NOTE: To change the result announcement time, modify the date string below.
             // Format: 'YYYY-MM-DDTHH:mm:ss' (e.g., '2025-10-08T21:30:00')
-            const [targetDate, setTargetDate] = useState(new Date('2025-10-07T21:30:00'));
+            const [targetDate, setTargetDate] = useState(new Date('2025-10-08T22:00:00'));
             
             const [countdown, setCountdown] = useState(() => calculateTimeRemaining(targetDate));
-            const [resultsFetchedForCycle, setResultsFetchedForCycle] = useState(false);
 
             const [resultData, setResultData] = useState(() => {
                 try {
@@ -789,6 +840,7 @@
                     return savedResults ? JSON.parse(savedResults) : {};
                 } catch { return {}; }
             });
+
             const [isResultLoading, setResultLoading] = useState(false);
             const [resultError, setResultError] = useState(null);
             const [overallRankData, setOverallRankData] = useState([]);
@@ -847,12 +899,25 @@
                         try {
                             const canvas = await html2canvas(element, { useCORS: true, scale: 2 });
                             const dataUrl = canvas.toDataURL('image/png');
-                            const link = document.createElement('a');
-                            link.href = dataUrl;
-                            link.download = `Telethone-Winners-${posterData.className.replace(/\s+/g, '-')}.png`;
-                            document.body.appendChild(link);
-                            link.click();
-                            document.body.removeChild(link);
+                            
+                            if (posterData.type === 'pdf') {
+                                const { jsPDF } = window.jspdf;
+                                const pdf = new jsPDF({
+                                    orientation: 'p',
+                                    unit: 'px',
+                                    format: [canvas.width, canvas.height]
+                                });
+                                pdf.addImage(dataUrl, 'PNG', 0, 0, canvas.width, canvas.height);
+                                pdf.save('Telethone-Results-Summary.pdf');
+                            } else {
+                                const link = document.createElement('a');
+                                link.href = dataUrl;
+                                link.download = `Telethone-Winners-${posterData.className.replace(/\s+/g, '-')}.png`;
+                                document.body.appendChild(link);
+                                link.click();
+                                document.body.removeChild(link);
+                            }
+
                         } catch(err) {
                              console.error("Error generating poster:", err);
                              alert("Poster download karne mein error aaya. Koshish karein ki photo links sahi hon.");
@@ -900,6 +965,20 @@
                 });
             };
 
+            const handleDownloadFullListPoster = () => {
+                const now = formatDateTimeForPoster(new Date());
+                
+                setIsDownloading(true);
+                const winners = data.items;
+                setPosterData({ 
+                    type: 'list', 
+                    className: active, 
+                    winners, 
+                    date: now, 
+                    title: `TELETHON 2025 FULL LIST` 
+                });
+            };
+
             const handleDownloadOverallRankPoster = () => {
                 if (overallRankData.length === 0) return;
                 const now = formatDateTimeForPoster(new Date());
@@ -912,6 +991,19 @@
                     title: 'TELETHON 2025 ALL INDIA CLASSIC RANK'
                 });
             };
+
+            const handleDownloadPdfResult = () => {
+                if (Object.keys(resultData).length === 0) return;
+                const now = formatDateTimeForPoster(new Date());
+                setIsDownloading(true);
+                setPosterData({
+                    type: 'pdf',
+                    className: 'Full-Results',
+                    winners: resultData,
+                    date: now,
+                });
+            };
+
 
             function getActiveConfig() {
                 const cfg = DEFAULT_SHEET_CONFIGS[active] || { id: "", sheet: "Sheet1" };
@@ -1068,6 +1160,8 @@
                     });
                     setResultData(winnersMap);
                     localStorage.setItem(LAST_RESULTS_KEY, JSON.stringify(winnersMap));
+                    // Lock the results for this cycle
+                    localStorage.setItem(LAST_FETCH_CYCLE_KEY, targetDate.getTime().toString());
                 } catch (e) {
                     setResultError("Sabhi results data ko process nahi kiya ja saka.");
                 } finally {
@@ -1154,14 +1248,17 @@
                         const remaining = calculateTimeRemaining(targetDate);
                         setCountdown(remaining);
                         
-                        if (remaining.expired && !resultsFetchedForCycle) {
-                            loadAllResults();
-                            setResultsFetchedForCycle(true);
+                        if (remaining.expired) {
+                            const lastFetchedCycleTimestamp = parseInt(localStorage.getItem(LAST_FETCH_CYCLE_KEY) || '0', 10);
+                            if (targetDate.getTime() > lastFetchedCycleTimestamp) {
+                                // Only fetch if this cycle's results haven't been fetched yet.
+                                loadAllResults();
+                            }
                         }
                     }, 1000);
                     return () => clearInterval(timer);
                 }
-            }, [active, targetDate, resultsFetchedForCycle]);
+            }, [active, targetDate]);
             
             const ustazLabel = active === 'Takhassusat' ? 'Jamia Name' : 'Ustaz Name';
             const jamiaLabel = active === 'Takhassusat' ? 'Class' : 'Jamia Name';
@@ -1172,6 +1269,7 @@
             
             const classesForTop10 = ["Ibtidaiya", "Sale Awwal", "Sale Duwam", "Ula", "Saniya", "Salisa", "Rabia", "Khamisa"];
             const classesForTop3 = ["Sadisa", "Sabia", "Doratul Hadis", "Takhassusat"];
+            const classesForFullList = ["Khamisa", "Sadisa", "Sabia", "Doratul Hadis", "Takhassusat"];
             
             const DownloadIcon = () => (
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1187,6 +1285,7 @@
                     {posterData && posterData.type === 'podium5' && ReactDOM.createPortal(<Podium5Poster data={posterData} />, posterContainerRef.current)}
                     {posterData && posterData.type === 'list' && ReactDOM.createPortal(<ListPoster data={posterData} />, posterContainerRef.current)}
                     {posterData && posterData.type === 'overall' && ReactDOM.createPortal(<OverallRankPoster data={posterData} />, posterContainerRef.current)}
+                    {posterData && posterData.type === 'pdf' && ReactDOM.createPortal(<PdfResultPoster data={posterData} />, posterContainerRef.current)}
 
                     <div className="max-w-7xl mx-auto p-4 sm:p-6">
                         <header className="mb-6 text-center">
@@ -1297,48 +1396,55 @@
                                                 </>
                                             ) : (
                                                 <>
-                                                    <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announced!</div>
+                                                    <div className="flex justify-center items-center gap-4 mb-4">
+                                                        <div className="text-3xl font-bold text-emerald-600">Results Announced!</div>
+                                                        <button onClick={handleDownloadPdfResult} disabled={isDownloading} className="p-2 text-white bg-green-600 rounded-lg shadow-sm hover:bg-green-700 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5" title="Download Full Result PDF">
+                                                            {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">PDF</span></>}
+                                                        </button>
+                                                    </div>
                                                     {isResultLoading ? <div className="text-sm text-slate-500 animate-pulse">Loading Results...</div> : Object.keys(resultData).length > 0 ? (
-                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                            {Object.keys(resultData).map(className => (
-                                                                <div key={className} className="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm flex flex-col">
-                                                                    <div className="flex justify-between items-center mb-3 border-b pb-2">
-                                                                        <h3 className="text-xl font-bold text-slate-700">{className} Winners</h3>
-                                                                        <div className="flex items-center gap-2">
-                                                                            <button onClick={() => handleDownloadTop3PodiumPoster(className, resultData[className])} title="Download Top 3 Podium Poster" disabled={isDownloading || resultData[className].length < 3} className="p-2 text-white bg-sky-500 rounded-lg shadow-sm hover:bg-sky-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
-                                                                                {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T3</span></>}
-                                                                            </button>
-                                                                            <button onClick={() => handleDownloadTop5PodiumPoster(className, resultData[className])} title="Download Top 5 Podium Poster" disabled={isDownloading || resultData[className].length < 5} className="p-2 text-white bg-indigo-500 rounded-lg shadow-sm hover:bg-indigo-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
-                                                                                {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T5</span></>}
-                                                                            </button>
+                                                        <>
+                                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                                {Object.keys(resultData).map(className => (
+                                                                    <div key={className} className="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm flex flex-col">
+                                                                        <div className="flex justify-between items-center mb-3 border-b pb-2">
+                                                                            <h3 className="text-xl font-bold text-slate-700">{className} Winners</h3>
+                                                                            <div className="flex items-center gap-2">
+                                                                                <button onClick={() => handleDownloadTop3PodiumPoster(className, resultData[className])} title="Download Top 3 Podium Poster" disabled={isDownloading || resultData[className].length < 3} className="p-2 text-white bg-sky-500 rounded-lg shadow-sm hover:bg-sky-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                                                                    {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T3</span></>}
+                                                                                </button>
+                                                                                <button onClick={() => handleDownloadTop5PodiumPoster(className, resultData[className])} title="Download Top 5 Podium Poster" disabled={isDownloading || resultData[className].length < 5} className="p-2 text-white bg-indigo-500 rounded-lg shadow-sm hover:bg-indigo-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                                                                    {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T5</span></>}
+                                                                                </button>
+                                                                            </div>
                                                                         </div>
-                                                                    </div>
-                                                                    <div className="space-y-4 flex-grow">
-                                                                        {resultData[className].slice(0, 3).map((item, index) => (
-                                                                            <div key={index} className={`p-4 rounded-xl text-center transition-all duration-300 shadow-md ${index === 0 ? "bg-gradient-to-br from-amber-100 to-yellow-200 border-amber-300" : "bg-gradient-to-br from-slate-50 to-gray-100 border-slate-200"} border`}>
-                                                                                <img
-                                                                                    src={item.photoUrl || 'https://placehold.co/200x200/e2e8f0/64748b?text=Photo'}
-                                                                                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/200x200/e2e8f0/64748b?text=Error'; }}
-                                                                                    alt={`Winner ${item.jamia}`}
-                                                                                    className="w-32 h-32 md:w-40 md:h-40 mx-auto rounded-full object-cover border-8 border-white shadow-xl mb-4"
-                                                                                />
-                                                                                <div className="flex-grow text-center">
-                                                                                    <p className={`text-xl font-bold ${index === 0 ? 'text-amber-800' : 'text-slate-800'}`}>{item.jamia}</p>
-                                                                                    <p className="text-md text-slate-500 mb-3">{item.ustaz}</p>
-                                                                                </div>
-                                                                                <div className={`inline-flex items-center justify-center p-3 rounded-lg ${index === 0 ? 'bg-amber-200' : 'bg-slate-200'}`}>
-                                                                                    <span className="text-4xl mr-3">{medalForIndex(index)}</span>
-                                                                                    <div>
-                                                                                         <span className="font-extrabold text-3xl font-['Bebas_Neue'] tracking-wider text-indigo-700">{item.unit}</span>
-                                                                                         <span className="block text-xs text-slate-600 -mt-1">UNITS</span>
+                                                                        <div className="space-y-4 flex-grow">
+                                                                            {resultData[className].slice(0, 3).map((item, index) => (
+                                                                                <div key={index} className={`p-4 rounded-xl text-center transition-all duration-300 shadow-md ${index === 0 ? "bg-gradient-to-br from-amber-100 to-yellow-200 border-amber-300" : "bg-gradient-to-br from-slate-50 to-gray-100 border-slate-200"} border`}>
+                                                                                    <img
+                                                                                        src={item.photoUrl || 'https://placehold.co/200x200/e2e8f0/64748b?text=Photo'}
+                                                                                        onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/200x200/e2e8f0/64748b?text=Error'; }}
+                                                                                        alt={`Winner ${item.jamia}`}
+                                                                                        className="w-32 h-32 md:w-40 md:h-40 mx-auto rounded-full object-cover border-8 border-white shadow-xl mb-4"
+                                                                                    />
+                                                                                    <div className="flex-grow text-center">
+                                                                                        <p className={`text-xl font-bold ${index === 0 ? 'text-amber-800' : 'text-slate-800'}`}>{item.jamia}</p>
+                                                                                        <p className="text-md text-slate-500 mb-3">{item.ustaz}</p>
+                                                                                    </div>
+                                                                                    <div className={`inline-flex items-center justify-center p-3 rounded-lg ${index === 0 ? 'bg-amber-200' : 'bg-slate-200'}`}>
+                                                                                        <span className="text-4xl mr-3">{medalForIndex(index)}</span>
+                                                                                        <div>
+                                                                                             <span className="font-extrabold text-3xl font-['Bebas_Neue'] tracking-wider text-indigo-700">{item.unit}</span>
+                                                                                             <span className="block text-xs text-slate-600 -mt-1">UNITS</span>
+                                                                                        </div>
                                                                                     </div>
                                                                                 </div>
-                                                                            </div>
-                                                                        ))}
+                                                                            ))}
+                                                                        </div>
                                                                     </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
+                                                                ))}
+                                                            </div>
+                                                        </>
                                                     ) : <div className="text-sm text-slate-500 mt-2">No results found.</div>}
                                                 </>
                                             )}
@@ -1367,6 +1473,11 @@
                                              {classesForTop3.includes(active) && (
                                                  <button onClick={() => handleDownloadClassPoster(3)} title="Download Top 3 Poster" disabled={isDownloading || data.items.length === 0} className="p-2 text-white bg-indigo-500 rounded-lg shadow-sm hover:bg-indigo-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
                                                     {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T3</span></>}
+                                                </button>
+                                            )}
+                                            {classesForFullList.includes(active) && (
+                                                <button onClick={handleDownloadFullListPoster} title="Download Full List Poster" disabled={isDownloading || data.items.length === 0} className="p-2 text-white bg-purple-600 rounded-lg shadow-sm hover:bg-purple-700 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                                    {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">FULL</span></>}
                                                 </button>
                                             )}
                                         </div>
