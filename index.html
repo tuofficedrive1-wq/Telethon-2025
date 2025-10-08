@@ -721,13 +721,13 @@
 
             const matchups = [
                 { id: 1, teamA: 'Ajmer', teamB: 'Dehli' },
-                { id: 2, teamA: 'Mumbai', teamB: 'HYDERABAD & Banglore' },
+                { id: 2, teamA: 'Mumbai', teamB: 'HYDERABAD & BENGALORE' },
                 { id: 3, teamA: 'Kolkata', teamB: 'HYDERABAD' }
             ];
 
             const calculateScore = (teamName) => {
-                if (teamName === 'HYDERABAD & Banglore') {
-                    return getUnit('HYDERABAD') + getUnit('Banglore');
+                if (teamName === 'HYDERABAD & BENGALORE') {
+                    return getUnit('HYDERABAD') + getUnit('BENGALORE');
                 }
                 return getUnit(teamName);
             };
@@ -1553,5 +1553,6 @@
 
 </body>
 </html>
+
 
 
