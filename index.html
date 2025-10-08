@@ -186,6 +186,7 @@
 
         const POLL_INTERVAL_MS = 5000;
         const LOCALSTORAGE_KEY = "telethone_sheet_overrides_enhanced_live";
+        const LAST_RESULTS_KEY = "telethone_last_results";
         const UNIT_DIVISOR = 7000;
 
         function parseSheetIdFromUrl(input) {
@@ -303,6 +304,7 @@
         }
         
         function calculateTimeRemaining(targetDate) {
+            if (!targetDate) return { days: 0, hours: 0, minutes: 0, seconds: 0, expired: true };
             const now = new Date();
             const difference = targetDate - now;
 
@@ -773,10 +775,20 @@
             const [error, setError] = useState(null);
             const [sheetInput, setSheetInput] = useState("");
             const [highlightKey, setHighlightKey] = useState(null);
-            const pollRef = useRef(null);
-            const targetDate = new Date('October 06, 2025 21:30:00 GMT+0530'); 
-            const [countdown, setCountdown] = useState(calculateTimeRemaining(targetDate));
-            const [resultData, setResultData] = useState({});
+            
+            // NOTE: To change the result announcement time, modify the date string below.
+            // Format: 'YYYY-MM-DDTHH:mm:ss' (e.g., '2025-10-06T21:30:00')
+            const [targetDate, setTargetDate] = useState(new Date('2025-10-06T21:30:00'));
+            
+            const [countdown, setCountdown] = useState(() => calculateTimeRemaining(targetDate));
+            const [resultsFetchedForCycle, setResultsFetchedForCycle] = useState(false);
+
+            const [resultData, setResultData] = useState(() => {
+                try {
+                    const savedResults = localStorage.getItem(LAST_RESULTS_KEY);
+                    return savedResults ? JSON.parse(savedResults) : {};
+                } catch { return {}; }
+            });
             const [isResultLoading, setResultLoading] = useState(false);
             const [resultError, setResultError] = useState(null);
             const [overallRankData, setOverallRankData] = useState([]);
@@ -792,6 +804,7 @@
 
             // Effect for time-based visibility of tabs
             useEffect(() => {
+                if (!targetDate) return;
                 const visibilityTimer = setInterval(() => {
                     const now = new Date();
                     const fiveMinutesBefore = new Date(targetDate.getTime() - 5 * 60 * 1000);
@@ -800,34 +813,27 @@
                     
                     setVisibleOptions(currentVisibleOptions => {
                         if (inResultWindow) {
-                            // If we are in the result window and more than one tab is visible
                             if (currentVisibleOptions.length > 1) {
-                                setActive("Result"); // Switch to result tab
-                                return ["Result"]; // Show only result tab
+                                setActive("Result");
+                                return ["Result"];
                             }
                         } else {
-                            // If we are outside the result window and only one tab is visible
                             if (currentVisibleOptions.length <= 1) {
-                                // Switch back to default tab if the current one is still "Result"
                                 setActive(currentActive => currentActive === "Result" ? "Ibtidaiya" : currentActive);
-                                return allOptions; // Show all tabs again
+                                return allOptions;
                             }
                         }
-                        return currentVisibleOptions; // No change needed
+                        return currentVisibleOptions;
                     });
-                }, 1000); // Check every second for better responsiveness
+                }, 1000);
 
                 return () => clearInterval(visibilityTimer);
-            }, []); // Run this effect only once when the component mounts
+            }, [targetDate]); 
 
             useEffect(() => {
                 posterContainerRef.current = document.getElementById('poster-container');
-                 // Load data for special tabs once on initial mount so it's ready when the user clicks them.
                 loadOverallRank();
                 loadRegionData();
-                if (calculateTimeRemaining(targetDate).expired) {
-                    loadAllResults();
-                }
             }, []);
             
             // Poster Generation Effect
@@ -835,7 +841,7 @@
                 if (!posterData) return;
 
                 const generateImage = async () => {
-                    await new Promise(resolve => setTimeout(resolve, 100)); // Wait for render
+                    await new Promise(resolve => setTimeout(resolve, 100));
                     const element = document.getElementById('poster-to-download');
                     if(element && window.html2canvas) {
                         try {
@@ -851,7 +857,7 @@
                              console.error("Error generating poster:", err);
                              alert("Poster download karne mein error aaya. Koshish karein ki photo links sahi hon.");
                         } finally {
-                             setPosterData(null); // Clean up
+                             setPosterData(null);
                              setIsDownloading(false);
                         }
                     }
@@ -906,7 +912,6 @@
                     title: 'TELETHON 2025 ALL INDIA CLASSIC RANK'
                 });
             };
-
 
             function getActiveConfig() {
                 const cfg = DEFAULT_SHEET_CONFIGS[active] || { id: "", sheet: "Sheet1" };
@@ -1014,10 +1019,8 @@
                 }
             }
 
-            async function loadAllResults() {
-                if (Object.keys(resultData).length > 0 || isResultLoading) {
-                    return; // Data already fetched or is being fetched, no need to run again
-                }
+            const loadAllResults = async () => {
+                if (isResultLoading) return;
                 setResultLoading(true);
                 setResultError(null);
                 const sheetOptions = allOptions.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
@@ -1064,6 +1067,7 @@
                         if (r.error?.includes("Too many requests")) setResultError(r.error);
                     });
                     setResultData(winnersMap);
+                    localStorage.setItem(LAST_RESULTS_KEY, JSON.stringify(winnersMap));
                 } catch (e) {
                     setResultError("Sabhi results data ko process nahi kiya ja saka.");
                 } finally {
@@ -1119,37 +1123,45 @@
                 }
             }
 
+            // This is the main polling/timer effect that controls what happens for each tab.
             useEffect(() => {
-                const actionMap = {
-                    "Result": () => {
-                        if (countdown.expired) loadAllResults();
-                        const timer = setInterval(() => setCountdown(calculateTimeRemaining(targetDate)), 1000);
-                        return () => clearInterval(timer);
-                    },
-                    "Overall Rank": loadOverallRank,
-                    "Region Competition": loadRegionData,
-                    "Default": loadActiveSheet,
-                };
-                
-                const currentAction = actionMap[active] || actionMap["Default"];
-                
-                if (pollRef.current) clearInterval(pollRef.current);
-                const { id } = getActiveConfig();
-
-                if (active !== "Result" && active !== "Overall Rank" && active !== "Region Competition" && !isValidSheetId(id)) {
-                     setData({ items: [] });
-                     setError(null);
-                     setLoading(false);
-                     setIsDataLoaded(true);
-                } else {
-                    currentAction();
-                    if (active !== "Result") {
-                        pollRef.current = setInterval(currentAction, POLL_INTERVAL_MS);
+                if (active !== 'Result') {
+                    const actionMap = {
+                        "Overall Rank": loadOverallRank,
+                        "Region Competition": loadRegionData,
+                        "Default": loadActiveSheet,
+                    };
+                    const currentAction = actionMap[active] || actionMap["Default"];
+                    
+                    const { id } = getActiveConfig();
+                    if (active !== "Overall Rank" && active !== "Region Competition" && !isValidSheetId(id)) {
+                         setData({ items: [] });
+                         setError(null);
+                         setLoading(false);
+                         setIsDataLoaded(true);
+                    } else {
+                        currentAction();
+                        const pollId = setInterval(currentAction, POLL_INTERVAL_MS);
+                        return () => clearInterval(pollId);
                     }
                 }
-                
-                return () => clearInterval(pollRef.current);
-            }, [active, overrides, countdown.expired]);
+            }, [active, overrides]);
+
+            // This effect handles the countdown logic for the Result tab
+            useEffect(() => {
+                if (active === 'Result' && targetDate) {
+                    const timer = setInterval(() => {
+                        const remaining = calculateTimeRemaining(targetDate);
+                        setCountdown(remaining);
+                        
+                        if (remaining.expired && !resultsFetchedForCycle) {
+                            loadAllResults();
+                            setResultsFetchedForCycle(true);
+                        }
+                    }, 1000);
+                    return () => clearInterval(timer);
+                }
+            }, [active, targetDate, resultsFetchedForCycle]);
             
             const ustazLabel = active === 'Takhassusat' ? 'Jamia Name' : 'Ustaz Name';
             const jamiaLabel = active === 'Takhassusat' ? 'Class' : 'Jamia Name';
@@ -1267,65 +1279,72 @@
                                 </div>
                             ) : active === "Result" ? (
                                 <div className="bg-white border rounded-lg p-6 text-center shadow-lg">
-                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">07-10-2025 Tuesday</h2>
-                                    {countdown.expired ? (
+                                    
+                                    {targetDate ? (
                                         <>
-                                            <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announced!</div>
-                                            {isResultLoading ? <div className="text-sm text-slate-500 animate-pulse">Loading Results...</div> : Object.keys(resultData).length > 0 ? (
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                                                    {Object.keys(resultData).map(className => (
-                                                        <div key={className} className="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm flex flex-col">
-                                                            <div className="flex justify-between items-center mb-3 border-b pb-2">
-                                                                <h3 className="text-xl font-bold text-slate-700">{className} Winners</h3>
-                                                                <div className="flex items-center gap-2">
-                                                                    <button onClick={() => handleDownloadTop3PodiumPoster(className, resultData[className])} title="Download Top 3 Podium Poster" disabled={isDownloading || resultData[className].length < 3} className="p-2 text-white bg-sky-500 rounded-lg shadow-sm hover:bg-sky-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
-                                                                        {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T3</span></>}
-                                                                    </button>
-                                                                    <button onClick={() => handleDownloadTop5PodiumPoster(className, resultData[className])} title="Download Top 5 Podium Poster" disabled={isDownloading || resultData[className].length < 5} className="p-2 text-white bg-indigo-500 rounded-lg shadow-sm hover:bg-indigo-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
-                                                                        {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T5</span></>}
-                                                                    </button>
-                                                                </div>
+                                            <h2 className="text-3xl font-extrabold text-slate-800 mb-4">{targetDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</h2>
+                                            {!countdown.expired ? (
+                                                <>
+                                                    <div className="text-xl font-medium text-slate-600 mb-6">Results will be announced at {targetDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}!</div>
+                                                    <div className="flex justify-center items-end gap-4 md:gap-8 font-bold">
+                                                        {Object.entries({ Days: countdown.days, Hours: countdown.hours, Minutes: countdown.minutes, Seconds: countdown.seconds }).map(([label, value]) => (
+                                                            <div key={label} className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] shadow-lg">
+                                                                <span className="text-4xl md:text-5xl text-sky-700">{String(value).padStart(2, '0')}</span>
+                                                                <span className="text-sm md:text-base text-slate-500">{label}</span>
                                                             </div>
-                                                            <div className="space-y-4 flex-grow">
-                                                                {resultData[className].slice(0, 3).map((item, index) => ( // Show only top 3 in the UI card
-                                                                    <div key={index} className={`p-4 rounded-xl text-center transition-all duration-300 shadow-md ${index === 0 ? "bg-gradient-to-br from-amber-100 to-yellow-200 border-amber-300" : "bg-gradient-to-br from-slate-50 to-gray-100 border-slate-200"} border`}>
-                                                                        <img
-                                                                            src={item.photoUrl || 'https://placehold.co/200x200/e2e8f0/64748b?text=Photo'}
-                                                                            onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/200x200/e2e8f0/64748b?text=Error'; }}
-                                                                            alt={`Winner ${item.jamia}`}
-                                                                            className="w-32 h-32 md:w-40 md:h-40 mx-auto rounded-full object-cover border-8 border-white shadow-xl mb-4"
-                                                                        />
-                                                                        <div className="flex-grow text-center">
-                                                                            <p className={`text-xl font-bold ${index === 0 ? 'text-amber-800' : 'text-slate-800'}`}>{item.jamia}</p>
-                                                                            <p className="text-md text-slate-500 mb-3">{item.ustaz}</p>
-                                                                        </div>
-                                                                        <div className={`inline-flex items-center justify-center p-3 rounded-lg ${index === 0 ? 'bg-amber-200' : 'bg-slate-200'}`}>
-                                                                            <span className="text-4xl mr-3">{medalForIndex(index)}</span>
-                                                                            <div>
-                                                                                 <span className="font-extrabold text-3xl font-['Bebas_Neue'] tracking-wider text-indigo-700">{item.unit}</span>
-                                                                                 <span className="block text-xs text-slate-600 -mt-1">UNITS</span>
-                                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announced!</div>
+                                                    {isResultLoading ? <div className="text-sm text-slate-500 animate-pulse">Loading Results...</div> : Object.keys(resultData).length > 0 ? (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                                            {Object.keys(resultData).map(className => (
+                                                                <div key={className} className="bg-gray-50 border border-gray-200 p-4 rounded-xl shadow-sm flex flex-col">
+                                                                    <div className="flex justify-between items-center mb-3 border-b pb-2">
+                                                                        <h3 className="text-xl font-bold text-slate-700">{className} Winners</h3>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <button onClick={() => handleDownloadTop3PodiumPoster(className, resultData[className])} title="Download Top 3 Podium Poster" disabled={isDownloading || resultData[className].length < 3} className="p-2 text-white bg-sky-500 rounded-lg shadow-sm hover:bg-sky-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                                                                {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T3</span></>}
+                                                                            </button>
+                                                                            <button onClick={() => handleDownloadTop5PodiumPoster(className, resultData[className])} title="Download Top 5 Podium Poster" disabled={isDownloading || resultData[className].length < 5} className="p-2 text-white bg-indigo-500 rounded-lg shadow-sm hover:bg-indigo-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                                                                {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T5</span></>}
+                                                                            </button>
                                                                         </div>
                                                                     </div>
-                                                                ))}
-                                                            </div>
+                                                                    <div className="space-y-4 flex-grow">
+                                                                        {resultData[className].slice(0, 3).map((item, index) => (
+                                                                            <div key={index} className={`p-4 rounded-xl text-center transition-all duration-300 shadow-md ${index === 0 ? "bg-gradient-to-br from-amber-100 to-yellow-200 border-amber-300" : "bg-gradient-to-br from-slate-50 to-gray-100 border-slate-200"} border`}>
+                                                                                <img
+                                                                                    src={item.photoUrl || 'https://placehold.co/200x200/e2e8f0/64748b?text=Photo'}
+                                                                                    onError={(e) => { e.target.onerror = null; e.target.src = 'https://placehold.co/200x200/e2e8f0/64748b?text=Error'; }}
+                                                                                    alt={`Winner ${item.jamia}`}
+                                                                                    className="w-32 h-32 md:w-40 md:h-40 mx-auto rounded-full object-cover border-8 border-white shadow-xl mb-4"
+                                                                                />
+                                                                                <div className="flex-grow text-center">
+                                                                                    <p className={`text-xl font-bold ${index === 0 ? 'text-amber-800' : 'text-slate-800'}`}>{item.jamia}</p>
+                                                                                    <p className="text-md text-slate-500 mb-3">{item.ustaz}</p>
+                                                                                </div>
+                                                                                <div className={`inline-flex items-center justify-center p-3 rounded-lg ${index === 0 ? 'bg-amber-200' : 'bg-slate-200'}`}>
+                                                                                    <span className="text-4xl mr-3">{medalForIndex(index)}</span>
+                                                                                    <div>
+                                                                                         <span className="font-extrabold text-3xl font-['Bebas_Neue'] tracking-wider text-indigo-700">{item.unit}</span>
+                                                                                         <span className="block text-xs text-slate-600 -mt-1">UNITS</span>
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            ))}
                                                         </div>
-                                                    ))}
-                                                </div>
-                                            ) : <div className="text-sm text-slate-500 mt-2">No results found.</div>}
+                                                    ) : <div className="text-sm text-slate-500 mt-2">No results found.</div>}
+                                                </>
+                                            )}
                                         </>
                                     ) : (
-                                        <>
-                                            <div className="text-xl font-medium text-slate-600 mb-6">Results will be announced at 9:30pm!</div>
-                                            <div className="flex justify-center items-end gap-4 md:gap-8 font-bold">
-                                                {Object.entries({ Days: countdown.days, Hours: countdown.hours, Minutes: countdown.minutes, Seconds: countdown.seconds }).map(([label, value]) => (
-                                                    <div key={label} className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] shadow-lg">
-                                                        <span className="text-4xl md:text-5xl text-sky-700">{String(value).padStart(2, '0')}</span>
-                                                        <span className="text-sm md:text-base text-slate-500">{label}</span>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </>
+                                         <div className="text-lg font-medium text-slate-500">Countdown time not set.</div>
                                     )}
                                 </div>
                             ) : active === "Region Competition" ? (
