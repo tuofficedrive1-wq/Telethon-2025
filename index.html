@@ -777,7 +777,7 @@
             const [highlightKey, setHighlightKey] = useState(null);
             
             // NOTE: To change the result announcement time, modify the date string below.
-            // Format: 'YYYY-MM-DDTHH:mm:ss' (e.g., '2025-10-06T21:30:00')
+            // Format: 'YYYY-MM-DDTHH:mm:ss' (e.g., '2025-10-08T21:30:00')
             const [targetDate, setTargetDate] = useState(new Date('2025-10-07T21:30:00'));
             
             const [countdown, setCountdown] = useState(() => calculateTimeRemaining(targetDate));
@@ -1217,7 +1217,7 @@
                         </nav>
                         
                         <div className="flex flex-col items-center justify-center p-3 bg-indigo-50 rounded-xl shadow-md mb-4 border border-indigo-200">
-                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active}</h2>
+                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result' : active}</h2>
                         </div>
 
                         <main className="relative">
@@ -1439,5 +1439,4 @@
 
 </body>
 </html>
-
 
