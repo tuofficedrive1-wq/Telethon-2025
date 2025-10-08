@@ -472,6 +472,100 @@
                 </PosterLayout>
             );
         };
+        
+        // --- This component was missing and is now re-added ---
+        const ListPoster = ({ data }) => {
+            if (!data) return null;
+            const { className, winners, date, title } = data;
+            const isTakhassusat = className === 'Takhassusat';
+            const subTitle = title.replace('TELETHON 2025 ', '') + ' WINNERS';
+
+            return (
+                <div id="poster-to-download" style={{
+                    width: '1200px',
+                    height: 'auto',
+                    minHeight: '675px',
+                    padding: '32px',
+                    background: 'linear-gradient(135deg, #f0f9ff, #eef2ff)',
+                    fontFamily: "'Inter', sans-serif",
+                    display: 'flex',
+                    flexDirection: 'column',
+                }}>
+                    <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                        <h1 style={{ fontFamily: "'Bebas Neue', cursive", fontSize: '72px', color: '#1e3a8a', letterSpacing: '2px', margin: 0 }}>TELETHON 2025</h1>
+                        <p style={{ fontFamily: "'Bebas Neue', cursive", fontSize: '48px', color: '#6366f1', letterSpacing: '2px', margin: '-10px 0 0 0' }}>{subTitle}</p>
+                        <h2 style={{ fontFamily: "'Bowlby One SC', cursive", fontSize: '60px', color: '#0ea5e9', textTransform: 'uppercase', margin: 0 }}>{className}</h2>
+                    </div>
+                    
+                    <div style={{ flexGrow: 1 }}>
+                         <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '80px 200px 1fr 200px 200px',
+                            alignItems: 'center',
+                            gap: '16px',
+                            padding: '12px 16px',
+                            background: '#dbeafe',
+                            borderRadius: '12px',
+                            fontWeight: 'bold',
+                            fontSize: '20px',
+                            color: '#1e3a8a',
+                            marginBottom: '12px'
+                        }}>
+                            <span>Rank</span>
+                            <span>{isTakhassusat ? 'Jamia Name' : 'Ustaz Name'}</span>
+                            <span style={{ textAlign: 'center' }}>{isTakhassusat ? 'Class' : 'Jamia Name'}</span>
+                            <span style={{ textAlign: 'right' }}>Raqam</span>
+                            <span style={{ textAlign: 'right' }}>Unit</span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {winners.map((winner, idx) => {
+                                const rankColors = [
+                                    'rgba(252, 211, 77, 0.3)', // Gold
+                                    'rgba(192, 192, 192, 0.3)', // Silver
+                                    'rgba(205, 127, 50, 0.3)'  // Bronze
+                                ];
+                                const bgColor = idx < 3 ? rankColors[idx] : 'rgba(255,255,255,0.7)';
+                                const textColor = '#1e293b';
+
+                                return (
+                                    <div key={winner.__id || idx} style={{
+                                        display: 'grid',
+                                        gridTemplateColumns: '80px 200px 1fr 200px 200px',
+                                        alignItems: 'center',
+                                        gap: '16px',
+                                        padding: '12px 16px',
+                                        background: bgColor,
+                                        borderRadius: '12px',
+                                        fontSize: '22px',
+                                        color: textColor,
+                                        fontWeight: 500
+                                    }}>
+                                        <span style={{fontWeight: 'bold', fontSize: '24px'}}>{idx + 1}</span>
+                                        <span>{isTakhassusat ? winner.jamia : winner.ustaz}</span>
+                                        <span style={{ textAlign: 'center', fontWeight: 'bold' }}>
+                                            {medalForIndex(idx)} {isTakhassusat ? winner.ustaz : winner.jamia}
+                                        </span>
+                                        <span style={{ textAlign: 'right', fontWeight: 'bold' }}>{winner.__value.toLocaleString()}</span>
+                                        <span style={{ 
+                                            textAlign: 'right', 
+                                            fontFamily: "'Bebas Neue', cursive",
+                                            fontSize: '28px',
+                                            color: '#4f46e5'
+                                        }}>{winner.unit}</span>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    
+                     <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '24px', paddingTop: '16px', borderTop: '2px solid #dbeafe'}}>
+                        <p style={{ color: '#475569', fontSize: '18px', fontWeight: '600' }}>Majlis Talimi Umoor India</p>
+                        <p style={{ color: '#475569', fontSize: '18px', fontWeight: '600' }}>Date: {date}</p>
+                    </div>
+                </div>
+            );
+        };
 
         // --- NEW: Overall Rank Poster Component ---
         const OverallRankPoster = ({ data }) => {
@@ -680,7 +774,7 @@
             const [sheetInput, setSheetInput] = useState("");
             const [highlightKey, setHighlightKey] = useState(null);
             const pollRef = useRef(null);
-            const targetDate = new Date('October 07, 2025 22:00:00 GMT+0530'); 
+            const targetDate = new Date('October 06, 2025 21:30:00 GMT+0530'); 
             const [countdown, setCountdown] = useState(calculateTimeRemaining(targetDate));
             const [resultData, setResultData] = useState({});
             const [isResultLoading, setResultLoading] = useState(false);
@@ -1079,6 +1173,7 @@
                     {/* Poster component is rendered off-screen when needed */}
                     {posterData && posterData.type === 'podium3' && ReactDOM.createPortal(<Podium3Poster data={posterData} />, posterContainerRef.current)}
                     {posterData && posterData.type === 'podium5' && ReactDOM.createPortal(<Podium5Poster data={posterData} />, posterContainerRef.current)}
+                    {posterData && posterData.type === 'list' && ReactDOM.createPortal(<ListPoster data={posterData} />, posterContainerRef.current)}
                     {posterData && posterData.type === 'overall' && ReactDOM.createPortal(<OverallRankPoster data={posterData} />, posterContainerRef.current)}
 
                     <div className="max-w-7xl mx-auto p-4 sm:p-6">
@@ -1172,7 +1267,7 @@
                                 </div>
                             ) : active === "Result" ? (
                                 <div className="bg-white border rounded-lg p-6 text-center shadow-lg">
-                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">07-10-2025</h2>
+                                    <h2 className="text-3xl font-extrabold text-slate-800 mb-4">07-10-2025 Tuesday</h2>
                                     {countdown.expired ? (
                                         <>
                                             <div className="text-3xl font-bold text-emerald-600 mb-4">Results Announced!</div>
@@ -1221,7 +1316,7 @@
                                         </>
                                     ) : (
                                         <>
-                                            <div className="text-xl font-medium text-slate-600 mb-6">Results will be announced at 10:00pm!</div>
+                                            <div className="text-xl font-medium text-slate-600 mb-6">Results will be announced at 9:30pm!</div>
                                             <div className="flex justify-center items-end gap-4 md:gap-8 font-bold">
                                                 {Object.entries({ Days: countdown.days, Hours: countdown.hours, Minutes: countdown.minutes, Seconds: countdown.seconds }).map(([label, value]) => (
                                                     <div key={label} className="flex flex-col items-center p-4 bg-sky-100 rounded-xl min-w-[70px] shadow-lg">
@@ -1325,7 +1420,4 @@
 
 </body>
 </html>
-
-
-
 
