@@ -830,7 +830,10 @@
             
             // NOTE: To change the result announcement time, modify the date string below.
             // Format: 'YYYY-MM-DDTHH:mm:ss' (e.g., '2025-10-08T21:30:00')
-            const [targetDate, setTargetDate] = useState(new Date('2025-10-08T22:00:00'));
+            const [targetDate, setTargetDate] = useState(new Date('2025-10-08T22:10:00'));
+
+            // NOTE: To change the result page heading, modify the text below.
+            const resultPageHeading = "Quarter Final Competition";
             
             const [countdown, setCountdown] = useState(() => calculateTimeRemaining(targetDate));
 
@@ -1381,7 +1384,7 @@
                                     
                                     {targetDate ? (
                                         <>
-                                            <h2 className="text-3xl font-extrabold text-slate-800 mb-4">{targetDate.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' })}</h2>
+                                            <h2 className="text-3xl font-extrabold text-slate-800 mb-4">{resultPageHeading}</h2>
                                             {!countdown.expired ? (
                                                 <>
                                                     <div className="text-xl font-medium text-slate-600 mb-6">Results will be announced at {targetDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true })}!</div>
