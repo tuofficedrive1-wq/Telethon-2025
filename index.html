@@ -188,7 +188,6 @@
         const POLL_INTERVAL_MS = 5000;
         const LOCALSTORAGE_KEY = "telethone_sheet_overrides_enhanced_live";
         const LAST_RESULTS_KEY = "telethone_last_results";
-        const LAST_FETCH_CYCLE_KEY = "telethone_last_fetch_cycle";
         const UNIT_DIVISOR = 7000;
 
         function parseSheetIdFromUrl(input) {
@@ -1163,8 +1162,6 @@
                     });
                     setResultData(winnersMap);
                     localStorage.setItem(LAST_RESULTS_KEY, JSON.stringify(winnersMap));
-                    // Lock the results for this cycle
-                    localStorage.setItem(LAST_FETCH_CYCLE_KEY, targetDate.getTime().toString());
                 } catch (e) {
                     setResultError("Sabhi results data ko process nahi kiya ja saka.");
                 } finally {
@@ -1222,26 +1219,32 @@
 
             // This is the main polling/timer effect that controls what happens for each tab.
             useEffect(() => {
-                if (active !== 'Result') {
-                    const actionMap = {
-                        "Overall Rank": loadOverallRank,
-                        "Region Competition": loadRegionData,
-                        "Default": loadActiveSheet,
-                    };
-                    const currentAction = actionMap[active] || actionMap["Default"];
-                    
-                    const { id } = getActiveConfig();
-                    if (active !== "Overall Rank" && active !== "Region Competition" && !isValidSheetId(id)) {
-                         setData({ items: [] });
-                         setError(null);
-                         setLoading(false);
-                         setIsDataLoaded(true);
-                    } else {
-                        currentAction();
-                        const pollId = setInterval(currentAction, POLL_INTERVAL_MS);
-                        return () => clearInterval(pollId);
+                let pollId;
+
+                const actionMap = {
+                    "Overall Rank": loadOverallRank,
+                    "Region Competition": loadRegionData,
+                    "Result": () => { /* The countdown timer is handled in a separate effect */ },
+                    "Default": loadActiveSheet,
+                };
+                const currentAction = actionMap[active] || actionMap["Default"];
+                
+                const { id } = getActiveConfig();
+                if (active !== "Result" && active !== "Overall Rank" && active !== "Region Competition" && !isValidSheetId(id)) {
+                     setData({ items: [] });
+                     setError(null);
+                     setLoading(false);
+                     setIsDataLoaded(true);
+                } else {
+                    currentAction(); // Fetch once immediately
+                    if (active !== 'Result') {
+                        pollId = setInterval(currentAction, POLL_INTERVAL_MS); // Then poll
                     }
                 }
+                
+                return () => {
+                    if (pollId) clearInterval(pollId);
+                };
             }, [active, overrides]);
 
             // This effect handles the countdown logic for the Result tab
@@ -1252,13 +1255,9 @@
                         setCountdown(remaining);
                         
                         if (remaining.expired) {
-                            const lastFetchedCycleTimestamp = parseInt(localStorage.getItem(LAST_FETCH_CYCLE_KEY) || '0', 10);
-                            if (targetDate.getTime() > lastFetchedCycleTimestamp) {
-                                // Only fetch if this cycle's results haven't been fetched yet.
-                                loadAllResults();
-                            }
+                           loadAllResults(); // Keep fetching results when expired
                         }
-                    }, 1000);
+                    }, POLL_INTERVAL_MS); // Polls every 5 seconds
                     return () => clearInterval(timer);
                 }
             }, [active, targetDate]);
@@ -1319,7 +1318,7 @@
                         </nav>
                         
                         <div className="flex flex-col items-center justify-center p-3 bg-indigo-50 rounded-xl shadow-md mb-4 border border-indigo-200">
-                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result' : active}</h2>
+                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result (Quarter Final Competition)' : active}</h2>
                         </div>
 
                         <main className="relative">
