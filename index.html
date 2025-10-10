@@ -476,7 +476,6 @@
             );
         };
         
-        // --- This component was missing and is now re-added ---
         const ListPoster = ({ data }) => {
             if (!data) return null;
             const { className, winners, date, title } = data;
@@ -570,7 +569,6 @@
             );
         };
 
-        // --- NEW: Overall Rank Poster Component ---
         const OverallRankPoster = ({ data }) => {
             if (!data) return null;
             const { winners, date } = data;
@@ -829,10 +827,10 @@
             
             // NOTE: To change the result announcement time, modify the date string below.
             // Format: 'YYYY-MM-DDTHH:mm:ss' (e.g., '2025-10-08T21:30:00')
-            const [targetDate, setTargetDate] = useState(new Date('2025-10-08T22:10:00'));
+            const [targetDate, setTargetDate] = useState(new Date('2025-10-10T22:30:00'));
 
             // NOTE: To change the result page heading, modify the text below.
-            const resultPageHeading = "Quarter Final Competition";
+            const resultPageHeading = "Semi Final Competition";
             
             const [countdown, setCountdown] = useState(() => calculateTimeRemaining(targetDate));
 
@@ -1224,7 +1222,7 @@
                 const actionMap = {
                     "Overall Rank": loadOverallRank,
                     "Region Competition": loadRegionData,
-                    "Result": () => { /* The countdown timer is handled in a separate effect */ },
+                    "Result": loadAllResults,
                     "Default": loadActiveSheet,
                 };
                 const currentAction = actionMap[active] || actionMap["Default"];
@@ -1236,10 +1234,8 @@
                      setLoading(false);
                      setIsDataLoaded(true);
                 } else {
-                    currentAction(); // Fetch once immediately
-                    if (active !== 'Result') {
-                        pollId = setInterval(currentAction, POLL_INTERVAL_MS); // Then poll
-                    }
+                    currentAction();
+                    pollId = setInterval(currentAction, POLL_INTERVAL_MS);
                 }
                 
                 return () => {
@@ -1247,20 +1243,16 @@
                 };
             }, [active, overrides]);
 
-            // This effect handles the countdown logic for the Result tab
+            // This effect handles the countdown timer for the Result tab
             useEffect(() => {
-                if (active === 'Result' && targetDate) {
+                 if (targetDate) {
                     const timer = setInterval(() => {
                         const remaining = calculateTimeRemaining(targetDate);
                         setCountdown(remaining);
-                        
-                        if (remaining.expired) {
-                           loadAllResults(); // Keep fetching results when expired
-                        }
-                    }, POLL_INTERVAL_MS); // Polls every 5 seconds
+                    }, 1000);
                     return () => clearInterval(timer);
                 }
-            }, [active, targetDate]);
+            }, [targetDate]);
             
             const ustazLabel = active === 'Takhassusat' ? 'Jamia Name' : 'Ustaz Name';
             const jamiaLabel = active === 'Takhassusat' ? 'Class' : 'Jamia Name';
@@ -1318,7 +1310,7 @@
                         </nav>
                         
                         <div className="flex flex-col items-center justify-center p-3 bg-indigo-50 rounded-xl shadow-md mb-4 border border-indigo-200">
-                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result (Quarter Final Competition)' : active}</h2>
+                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result' : active}</h2>
                         </div>
 
                         <main className="relative">
@@ -1404,7 +1396,7 @@
                                                             {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">PDF</span></>}
                                                         </button>
                                                     </div>
-                                                    {isResultLoading ? <div className="text-sm text-slate-500 animate-pulse">Loading Results...</div> : Object.keys(resultData).length > 0 ? (
+                                                    {(isResultLoading && Object.keys(resultData).length === 0) ? <div className="text-sm text-slate-500 animate-pulse">Loading Results...</div> : Object.keys(resultData).length > 0 ? (
                                                         <>
                                                             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                                                                 {Object.keys(resultData).map(className => (
@@ -1552,5 +1544,4 @@
 
 </body>
 </html>
-
 
