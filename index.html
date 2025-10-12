@@ -180,6 +180,7 @@
             "Sabia": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Sabia" },
             "Doratul Hadis": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Daurul Hadis" },
             "Takhassusat": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Takhassusat" },
+            "Darulifta Ahle Sunnat": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Darul Ifta" },
             "Overall Rank": { id: null, sheet: null },
             "Result": { id: null, sheet: null },
             "Region Competition": { id: null, sheet: null }
@@ -188,6 +189,7 @@
         const POLL_INTERVAL_MS = 5000;
         const LOCALSTORAGE_KEY = "telethone_sheet_overrides_enhanced_live";
         const LAST_RESULTS_KEY = "telethone_last_results";
+        const LAST_FETCH_CYCLE_KEY = "telethone_last_fetch_cycle";
         const UNIT_DIVISOR = 7000;
 
         function parseSheetIdFromUrl(input) {
@@ -356,8 +358,10 @@
                 3: { cardWidth: '180px', marginBottom: '20px', imageHeight: '170px' },
                 4: { cardWidth: '160px', marginBottom: '40px', imageHeight: '150px' },
                 5: { cardWidth: '160px', marginBottom: '40px', imageHeight: '150px' },
+                6: { cardWidth: '150px', marginBottom: '10px', imageHeight: '140px' },
             };
-            const style = styles[rank] || styles[5];
+            const style = styles[rank] || styles[6];
+            const numericImageHeight = parseInt(style.imageHeight, 10);
 
             const cardStyle = {
                 backgroundColor: '#ffffff', borderRadius: '12px', padding: '10px',
@@ -385,7 +389,7 @@
                          <img src={winner.photoUrl || 'https://placehold.co/30x30/e0e0e0/ffffff?text=?'} style={{ width: '30px', height: '30px', backgroundColor: '#e0e0e0', borderRadius: '50%', objectFit: 'cover' }} />
                     </div>
                     <div style={imageContainerStyle}>
-                         <img src={winner.photoUrl || `https://placehold.co/${style.imageHeight}/${style.imageHeight}/bbdefb/ffffff?text=${winner.jamia}`} alt={winner.jamia} style={{width: '100%', height: '100%', objectFit: 'cover'}}/>
+                         <img src={winner.photoUrl || `https://placehold.co/${numericImageHeight}x${numericImageHeight}/bbdefb/ffffff?text=${encodeURIComponent(winner.jamia)}`} alt={winner.jamia} style={{width: '100%', height: '100%', objectFit: 'cover'}}/>
                     </div>
                     <div style={{ marginTop: '10px', color: '#212121', textAlign: 'center' }}>
                         <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{winner.ustaz}</div>
@@ -470,6 +474,24 @@
                         <PodiumWinnerCard winner={winnerMap.first} rank={1} />
                         <PodiumWinnerCard winner={winnerMap.third} rank={3} />
                         <PodiumWinnerCard winner={winnerMap.fifth} rank={5} />
+                    </div>
+                    <PosterFooter date={date} />
+                </PosterLayout>
+            );
+        };
+
+        const Podium10Poster = ({ data }) => {
+            if (!data) return null;
+            const { className, winners, date } = data;
+            const sortedWinners = [...winners].sort((a, b) => b.__value - a.__value);
+
+            return (
+                 <PosterLayout width="1920px" height="1080px">
+                    <PosterHeader className={className} title="TOP 10 WINNERS" />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '20px', width: '100%', justifyContent: 'center' }}>
+                        {sortedWinners.map((winner, idx) => (
+                           <PodiumWinnerCard key={idx} winner={winner} rank={idx + 1} />
+                        ))}
                     </div>
                     <PosterFooter date={date} />
                 </PosterLayout>
@@ -827,7 +849,7 @@
             
             // NOTE: To change the result announcement time, modify the date string below.
             // Format: 'YYYY-MM-DDTHH:mm:ss' (e.g., '2025-10-08T21:30:00')
-            const [targetDate, setTargetDate] = useState(new Date('2025-10-12T23:00:00'));
+            const [targetDate, setTargetDate] = useState(new Date('2025-10-08T23:15:00'));
 
             // NOTE: To change the result page heading, modify the text below.
             const resultPageHeading = "Grand Final competition";
@@ -951,15 +973,27 @@
                 });
             };
 
-            const handleDownloadClassPoster = (count) => {
+            const handleDownloadTop10PodiumPoster = (className, winners) => {
+                const now = formatDateTimeForPoster(new Date());
+                setIsDownloading(true);
+                const topWinners = winners.slice(0, 10);
+                setPosterData({
+                    type: 'podium10',
+                    className: className,
+                    winners: topWinners,
+                    date: now,
+                });
+            };
+
+            const handleDownloadClassPoster = (count, className, winners) => {
                 const now = formatDateTimeForPoster(new Date());
                 
                 setIsDownloading(true);
-                const winners = data.items.slice(0, count);
+                const winnerList = (winners || data.items).slice(0, count);
                 setPosterData({ 
                     type: 'list', 
-                    className: active, 
-                    winners, 
+                    className: className || active, 
+                    winners: winnerList, 
                     date: now, 
                     title: `TELETHON 2025 TOP ${count}` 
                 });
@@ -1145,7 +1179,7 @@
                             })
                             .filter(x => x.jamia !== "" && !Number.isNaN(x.__value));
                         parsed.sort((a, b) => b.__value - a.__value);
-                        return { className: opt, winners: parsed.slice(0, 5) };
+                        return { className: opt, winners: parsed.slice(0, 10) };
                     } catch (err) {
                         return { className: opt, winners: [], error: err.message };
                     }
@@ -1262,8 +1296,8 @@
                                          (active === "Region Competition" && isRegionLoading && Object.keys(regionData).length === 0);
             
             const classesForTop10 = ["Ibtidaiya", "Sale Awwal", "Sale Duwam", "Ula", "Saniya", "Salisa", "Rabia", "Khamisa"];
-            const classesForTop3 = ["Sadisa", "Sabia", "Doratul Hadis", "Takhassusat"];
-            const classesForFullList = ["Khamisa", "Sadisa", "Sabia", "Doratul Hadis", "Takhassusat"];
+            const classesForTop3 = ["Sadisa", "Sabia", "Doratul Hadis", "Takhassusat", "Darulifta Ahle Sunnat"];
+            const classesForFullList = ["Khamisa", "Sadisa", "Sabia", "Doratul Hadis", "Takhassusat", "Darulifta Ahle Sunnat"];
             
             const DownloadIcon = () => (
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1277,6 +1311,7 @@
                     {/* Poster component is rendered off-screen when needed */}
                     {posterData && posterData.type === 'podium3' && ReactDOM.createPortal(<Podium3Poster data={posterData} />, posterContainerRef.current)}
                     {posterData && posterData.type === 'podium5' && ReactDOM.createPortal(<Podium5Poster data={posterData} />, posterContainerRef.current)}
+                    {posterData && posterData.type === 'podium10' && ReactDOM.createPortal(<Podium10Poster data={posterData} />, posterContainerRef.current)}
                     {posterData && posterData.type === 'list' && ReactDOM.createPortal(<ListPoster data={posterData} />, posterContainerRef.current)}
                     {posterData && posterData.type === 'overall' && ReactDOM.createPortal(<OverallRankPoster data={posterData} />, posterContainerRef.current)}
                     {posterData && posterData.type === 'pdf' && ReactDOM.createPortal(<PdfResultPoster data={posterData} />, posterContainerRef.current)}
@@ -1310,7 +1345,7 @@
                         </nav>
                         
                         <div className="flex flex-col items-center justify-center p-3 bg-indigo-50 rounded-xl shadow-md mb-4 border border-indigo-200">
-                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result' : active}</h2>
+                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result (Quarter Final Competition)' : active}</h2>
                         </div>
 
                         <main className="relative">
@@ -1409,6 +1444,9 @@
                                                                                 </button>
                                                                                 <button onClick={() => handleDownloadTop5PodiumPoster(className, resultData[className])} title="Download Top 5 Podium Poster" disabled={isDownloading || resultData[className].length < 5} className="p-2 text-white bg-indigo-500 rounded-lg shadow-sm hover:bg-indigo-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
                                                                                     {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T5</span></>}
+                                                                                </button>
+                                                                                <button onClick={() => handleDownloadTop10PodiumPoster(className, resultData[className])} title="Download Top 10 Podium Poster" disabled={isDownloading || resultData[className].length < 10} className="p-2 text-white bg-teal-500 rounded-lg shadow-sm hover:bg-teal-600 disabled:bg-slate-400 disabled:cursor-not-allowed flex items-center gap-1.5">
+                                                                                    {isDownloading ? <div className="loader !w-4 !h-4 !border-2 !border-t-white"></div> : <><DownloadIcon /> <span className="text-xs font-bold">T10</span></>}
                                                                                 </button>
                                                                             </div>
                                                                         </div>
@@ -1544,7 +1582,5 @@
 
 </body>
 </html>
-
-
 
 
