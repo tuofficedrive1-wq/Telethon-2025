@@ -823,7 +823,6 @@
         function TelethoneEnhancedLive() {
             const allOptions = Object.keys(DEFAULT_SHEET_CONFIGS);
             const [active, setActive] = useState("Ibtidaiya"); 
-            const [visibleOptions, setVisibleOptions] = useState(allOptions);
             const [overrides, setOverrides] = useState(() => {
                 try {
                     const raw = localStorage.getItem(LOCALSTORAGE_KEY);
@@ -848,8 +847,8 @@
             const [highlightKey, setHighlightKey] = useState(null);
             
             // NOTE: To change the result announcement time, modify the date string below.
-            // Format: 'YYYY-MM-DDTHH:mm:ss' (e.g., '2025-10-12T21:30:00')
-            const [targetDate, setTargetDate] = useState(new Date('2025-10-12T23:30:00'));
+            // Format: 'YYYY-MM-DDTHH:mm:ss' (e.g., '2025-10-08T21:30:00')
+            const [targetDate, setTargetDate] = useState(new Date('2025-10-08T23:15:00'));
 
             // NOTE: To change the result page heading, modify the text below.
             const resultPageHeading = "Grand Final competition";
@@ -875,34 +874,6 @@
             const [posterData, setPosterData] = useState(null);
             const [isDownloading, setIsDownloading] = useState(false);
             const posterContainerRef = useRef(null);
-
-            // Effect for time-based visibility of tabs
-            useEffect(() => {
-                if (!targetDate) return;
-                const visibilityTimer = setInterval(() => {
-                    const now = new Date();
-                    const fiveMinutesBefore = new Date(targetDate.getTime() - 5 * 60 * 1000);
-                    const fiveMinutesAfter = new Date(targetDate.getTime() + 5 * 60 * 1000);
-                    const inResultWindow = now >= fiveMinutesBefore && now < fiveMinutesAfter;
-                    
-                    setVisibleOptions(currentVisibleOptions => {
-                        if (inResultWindow) {
-                            if (currentVisibleOptions.length > 1) {
-                                setActive("Result");
-                                return ["Result"];
-                            }
-                        } else {
-                            if (currentVisibleOptions.length <= 1) {
-                                setActive(currentActive => currentActive === "Result" ? "Ibtidaiya" : currentActive);
-                                return allOptions;
-                            }
-                        }
-                        return currentVisibleOptions;
-                    });
-                }, 1000);
-
-                return () => clearInterval(visibilityTimer);
-            }, [targetDate]); 
 
             useEffect(() => {
                 posterContainerRef.current = document.getElementById('poster-container');
@@ -1326,7 +1297,7 @@
 
                         <nav className="mb-4">
                             <div className="hidden md:flex flex-wrap gap-2 justify-center">
-                                {visibleOptions.map((opt) => (
+                                {allOptions.map((opt) => (
                                     <button
                                         key={opt}
                                         onClick={() => setActive(opt)}
@@ -1339,13 +1310,13 @@
 
                             <div className="md:hidden">
                                 <select value={active} onChange={(e) => setActive(e.target.value)} className="block w-full px-3 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500 shadow-sm">
-                                    {visibleOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                                    {allOptions.map((opt) => <option key={opt} value={opt}>{opt}</option>)}
                                 </select>
                             </div>
                         </nav>
                         
                         <div className="flex flex-col items-center justify-center p-3 bg-indigo-50 rounded-xl shadow-md mb-4 border border-indigo-200">
-                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result (Grand Final Competition)' : active}</h2>
+                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result (Quarter Final Competition)' : active}</h2>
                         </div>
 
                         <main className="relative">
@@ -1582,8 +1553,4 @@
 
 </body>
 </html>
-
-
-
-
 
