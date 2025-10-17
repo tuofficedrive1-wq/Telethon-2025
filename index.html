@@ -181,9 +181,10 @@
             "Doratul Hadis": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Daurul Hadis" },
             "Takhassusat": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Takhassusat" },
             "Darulifta Ahle Sunnat": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Darul Ifta" },
+            "All Jamiaat": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "JAMIA" },
             "Overall Rank": { id: null, sheet: null },
             "Result": { id: null, sheet: null },
-            "Region Competition": { id: null, sheet: null }
+            "Region Competition": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "REGION" }
         };
 
         const POLL_INTERVAL_MS = 5000;
@@ -267,6 +268,7 @@
         }
 
         const RANK_CANDIDATES = ["Rank", "S. R.", "S.R.", "S R", "Sr", "Serial", "S No", "S.No"];
+        const NAME_CANDIDATES = ["Name", "Student Name"];
         const USTAZ_CANDIDATES = ["Ustaz Name", "USTAZ NAME", "Ustaz", "Ustad", "Instructor", "Teacher", "Class"];
         const JAMIA_CANDIDATES = ["Jamia Name", "JAMIA NAME", "Jamia", "Jamiah"];
         const RAQAM_CANDIDATES = ["Raqam", "RAQAM", "Amount", "Value", "रकम", "राशि"];
@@ -501,8 +503,12 @@
         const ListPoster = ({ data }) => {
             if (!data) return null;
             const { className, winners, date, title } = data;
-            const isTakhassusat = className === 'Takhassusat';
+            const isSpecialLayout = className === 'Takhassusat' || className === 'Darulifta Ahle Sunnat' || className === 'All Jamiaat';
             const subTitle = title.replace('TELETHON 2025 ', '') + (title.includes('FULL LIST') ? '' : ' WINNERS');
+
+            const col2Header = isSpecialLayout ? (className === 'All Jamiaat' ? 'Name' : 'Jamia Name') : 'Ustaz Name';
+            const col3Header = isSpecialLayout ? (className === 'All Jamiaat' ? 'Jamia' : 'Class') : 'Jamia Name';
+
 
             return (
                 <div id="poster-to-download" style={{
@@ -524,7 +530,7 @@
                     <div style={{ flexGrow: 1 }}>
                          <div style={{
                             display: 'grid',
-                            gridTemplateColumns: '80px 200px 1fr 200px 200px',
+                            gridTemplateColumns: '80px 1fr 1fr 200px',
                             alignItems: 'center',
                             gap: '16px',
                             padding: '12px 16px',
@@ -536,9 +542,8 @@
                             marginBottom: '12px'
                         }}>
                             <span>Rank</span>
-                            <span>{isTakhassusat ? 'Jamia Name' : 'Ustaz Name'}</span>
-                            <span style={{ textAlign: 'center' }}>{isTakhassusat ? 'Class' : 'Jamia Name'}</span>
-                            <span style={{ textAlign: 'right' }}>Raqam</span>
+                            <span>{col2Header}</span>
+                            <span style={{ textAlign: 'center' }}>{col3Header}</span>
                             <span style={{ textAlign: 'right' }}>Unit</span>
                         </div>
 
@@ -555,7 +560,7 @@
                                 return (
                                     <div key={winner.__id || idx} style={{
                                         display: 'grid',
-                                        gridTemplateColumns: '80px 200px 1fr 200px 200px',
+                                        gridTemplateColumns: '80px 1fr 1fr 200px',
                                         alignItems: 'center',
                                         gap: '16px',
                                         padding: '12px 16px',
@@ -566,11 +571,10 @@
                                         fontWeight: 500
                                     }}>
                                         <span style={{fontWeight: 'bold', fontSize: '24px'}}>{idx + 1}</span>
-                                        <span>{isTakhassusat ? winner.jamia : winner.ustaz}</span>
+                                        <span>{isSpecialLayout ? winner.jamia : winner.ustaz}</span>
                                         <span style={{ textAlign: 'center', fontWeight: 'bold' }}>
-                                            {medalForIndex(idx)} {isTakhassusat ? winner.ustaz : winner.jamia}
+                                            {medalForIndex(idx)} {isSpecialLayout ? winner.ustaz : winner.jamia}
                                         </span>
-                                        <span style={{ textAlign: 'right', fontWeight: 'bold' }}>{winner.__value.toLocaleString()}</span>
                                         <span style={{ 
                                             textAlign: 'right', 
                                             fontFamily: "'Bebas Neue', cursive",
@@ -848,10 +852,10 @@
             
             // NOTE: To change the result announcement time, modify the date string below.
             // Format: 'YYYY-MM-DDTHH:mm:ss' (e.g., '2025-10-08T21:30:00')
-            const [targetDate, setTargetDate] = useState(new Date('2025-10-12T23:59:59'));
+            const [targetDate, setTargetDate] = useState(new Date('2025-10-19T23:00:00'));
 
             // NOTE: To change the result page heading, modify the text below.
-            const resultPageHeading = "Grand Final competition";
+            const resultPageHeading = "GREAT GRAND FINAL COMING SOON...";
             
             const [countdown, setCountdown] = useState(() => calculateTimeRemaining(targetDate));
 
@@ -1034,29 +1038,45 @@
                     const ustazCol = findColumnByCandidates(cols, USTAZ_CANDIDATES);
                     const jamiaCol = findColumnByCandidates(cols, JAMIA_CANDIDATES);
                     const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
+                    const nameCol = findColumnByCandidates(cols, NAME_CANDIDATES);
+                    const unitCol = findColumnByCandidates(cols, UNIT_CANDIDATES);
+                    
+                    let parsed;
 
-                    if (!jamiaCol || !raqamCol) {
-                        setError("Sheet mein 'Jamia Name' aur 'Raqam' ke headers hone chahiye.");
-                        setData({ items: [] });
-                        setLoading(false);
-                        setIsDataLoaded(true);
-                        return;
-                    }
-
-                    const parsed = rows
-                        .map((r, idx) => {
-                            const n = parseNumericValue(r[raqamCol]);
+                    if (active === 'All Jamiaat') {
+                        if (!nameCol || !jamiaCol || !unitCol) {
+                            setError("Sheet 'JAMIA' mein 'Name', 'Jamia', aur 'Unit' ke headers hone chahiye.");
+                            setData({ items: [] }); setLoading(false); setIsDataLoaded(true); return;
+                        }
+                         parsed = rows.map((r, idx) => {
+                            const unitValue = parseNumericValue(r[unitCol]);
                             return { 
                                 __id: idx, 
-                                rank: String(r[rankCol] || "").trim(), 
-                                ustaz: String(r[ustazCol] || "").trim(), 
-                                jamia: String(r[jamiaCol] || "").trim(), 
-                                unit: formatUnit(n),
-                                raqamRaw: r[raqamCol], 
-                                __value: n
+                                ustaz: String(r[nameCol] || "").trim(), // Using ustaz for Name
+                                jamia: String(r[jamiaCol] || "").trim(),
+                                unit: r[unitCol], 
+                                __value: unitValue
                             };
-                        })
-                        .filter((x) => x.jamia !== "" && !Number.isNaN(x.__value));
+                        }).filter((x) => x.jamia !== "" && !Number.isNaN(x.__value));
+                    } else {
+                         if (!jamiaCol || !raqamCol) {
+                            setError("Sheet mein 'Jamia Name' aur 'Raqam' ke headers hone chahiye.");
+                            setData({ items: [] }); setLoading(false); setIsDataLoaded(true); return;
+                        }
+                        parsed = rows.map((r, idx) => {
+                                const n = parseNumericValue(r[raqamCol]);
+                                return { 
+                                    __id: idx, 
+                                    rank: String(r[rankCol] || "").trim(), 
+                                    ustaz: String(r[ustazCol] || "").trim(), 
+                                    jamia: String(r[jamiaCol] || "").trim(), 
+                                    unit: formatUnit(n),
+                                    raqamRaw: r[raqamCol], 
+                                    __value: n
+                                };
+                            })
+                            .filter((x) => x.jamia !== "" && !Number.isNaN(x.__value));
+                    }
 
                     parsed.sort((a, b) => b.__value - a.__value);
                     
@@ -1080,7 +1100,11 @@
             async function loadOverallRank() {
                 setRankLoading(true);
                 setRankError(null);
-                const sheetOptions = allOptions.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
+                const sheetOptions = allOptions.filter(key => 
+                    DEFAULT_SHEET_CONFIGS[key].id &&
+                    key !== 'Darulifta Ahle Sunnat' &&
+                    key !== 'All Jamiaat'
+                );
                 
                 const fetchPromises = sheetOptions.map(async (opt) => {
                     const cfg = DEFAULT_SHEET_CONFIGS[opt];
@@ -1120,7 +1144,7 @@
                 if (isResultLoading) return;
                 setResultLoading(true);
                 setResultError(null);
-                const sheetOptions = allOptions.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
+                const sheetOptions = allOptions.filter(key => DEFAULT_SHEET_CONFIGS[key].id && key !== 'Darulifta Ahle Sunnat' && key !== 'All Jamiaat');
 
                 const fetchPromises = sheetOptions.map(async (opt) => {
                     const cfg = DEFAULT_SHEET_CONFIGS[opt];
@@ -1133,11 +1157,26 @@
                         const ustazCol = findColumnByCandidates(cols, USTAZ_CANDIDATES);
                         const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
                         const photoCol = findColumnByCandidates(cols, PHOTO_CANDIDATES);
-
-                        if (!jamiaCol || !raqamCol) return { className: opt, winners: [], error: "Missing Columns" };
-
-                        const parsed = rows
-                            .map((r, idx) => {
+                        const nameCol = findColumnByCandidates(cols, NAME_CANDIDATES);
+                        const unitCol = findColumnByCandidates(cols, UNIT_CANDIDATES);
+                        
+                        let parsed;
+                        
+                        if (opt === 'All Jamiaat') {
+                             if (!nameCol || !jamiaCol || !unitCol) return { className: opt, winners: [], error: "Missing Columns" };
+                             parsed = rows.map((r, idx) => {
+                                const unitValue = parseNumericValue(r[unitCol]);
+                                return { 
+                                    __id: idx, 
+                                    ustaz: String(r[nameCol] || "").trim(),
+                                    jamia: String(r[jamiaCol] || "").trim(),
+                                    __value: unitValue,
+                                    unit: r[unitCol], 
+                                };
+                            }).filter(x => x.jamia !== "" && !Number.isNaN(x.__value));
+                        } else {
+                            if (!jamiaCol || !raqamCol) return { className: opt, winners: [], error: "Missing Columns" };
+                            parsed = rows.map((r, idx) => {
                                 const value = parseNumericValue(r[raqamCol]);
                                 return {
                                     __id: idx,
@@ -1147,8 +1186,9 @@
                                     unit: formatUnit(value),
                                     photoUrl: photoCol ? getGoogleDriveImageUrl(r[photoCol]) : null
                                 };
-                            })
-                            .filter(x => x.jamia !== "" && !Number.isNaN(x.__value));
+                            }).filter(x => x.jamia !== "" && !Number.isNaN(x.__value));
+                        }
+
                         parsed.sort((a, b) => b.__value - a.__value);
                         return { className: opt, winners: parsed.slice(0, 10) };
                     } catch (err) {
@@ -1175,46 +1215,49 @@
             async function loadRegionData() {
                 setRegionLoading(true);
                 setRegionError(null);
-                const sheetOptions = allOptions.filter(key => DEFAULT_SHEET_CONFIGS[key].id);
-                const regionTotals = {};
-
-                const fetchPromises = sheetOptions.map(async (opt) => {
-                    const cfg = DEFAULT_SHEET_CONFIGS[opt];
-                    const id = overrides[opt] ?? cfg.id;
-                    if (!isValidSheetId(id)) return;
-
-                    try {
-                        const { cols, items: rows } = await fetchSheetData(id, cfg.sheet);
-                        const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
-                        const regionCol = findColumnByCandidates(cols, REGION_CANDIDATES);
-
-                        if (!raqamCol || !regionCol) return;
-                        
-                        rows.forEach((r) => {
-                            const region = r[regionCol] ? String(r[regionCol]).trim() : null;
-                            const n = parseNumericValue(r[raqamCol]);
-                            if (region && !Number.isNaN(n)) {
-                                if (!regionTotals[region]) regionTotals[region] = 0;
-                                regionTotals[region] += n;
-                            }
-                        });
-                    } catch (err) {
-                        console.error(`Error fetching region data for ${opt}:`, err);
-                    }
-                });
-
                 try {
-                    await Promise.all(fetchPromises);
+                    const { id, sheet } = DEFAULT_SHEET_CONFIGS["Region Competition"];
+                    if (!isValidSheetId(id)) {
+                        throw new Error("Region Competition sheet not configured.");
+                    }
+                    
+                    const { cols, items: rows } = await fetchSheetData(id, sheet);
+                    
+                    const regionCol = findColumnByCandidates(cols, REGION_CANDIDATES);
+                    const unitCol = findColumnByCandidates(cols, UNIT_CANDIDATES);
+                    const raqamCol = findColumnByCandidates(cols, RAQAM_CANDIDATES);
+                    
+                    if (!regionCol || (!unitCol && !raqamCol)) {
+                        throw new Error("Sheet 'REGION' mein 'Region' aur 'Unit'/'Raqam' columns hone chahiye.");
+                    }
+
+                    const regionTotals = {};
+                    rows.forEach((r) => {
+                        const region = String(r[regionCol] || "").trim();
+                        if (region) {
+                            const unitValue = unitCol ? parseNumericValue(r[unitCol]) : parseNumericValue(r[raqamCol]) / UNIT_DIVISOR;
+                            
+                            if (!Number.isNaN(unitValue)) {
+                                if (!regionTotals[region]) {
+                                    regionTotals[region] = 0;
+                                }
+                                regionTotals[region] += unitValue;
+                            }
+                        }
+                    });
+
                     const finalRegionData = {};
                     for (const region in regionTotals) {
                         finalRegionData[region] = {
-                            totalAmount: regionTotals[region],
-                            totalUnit: regionTotals[region] / UNIT_DIVISOR
+                            totalAmount: regionTotals[region] * UNIT_DIVISOR, // Approximate amount
+                            totalUnit: regionTotals[region]
                         };
                     }
                     setRegionData(finalRegionData);
-                } catch (e) {
-                    setRegionError("Sabhi region data ko process nahi kiya ja saka.");
+
+                } catch (err) {
+                    console.error("Error loading region data:", err);
+                    setRegionError(err.message);
                 } finally {
                     setRegionLoading(false);
                 }
@@ -1259,8 +1302,9 @@
                 }
             }, [targetDate]);
             
-            const ustazLabel = active === 'Takhassusat' ? 'Jamia Name' : 'Ustaz Name';
-            const jamiaLabel = active === 'Takhassusat' ? 'Class' : 'Jamia Name';
+            const isSpecialLayout = active === 'Takhassusat' || active === 'Darulifta Ahle Sunnat' || active === 'All Jamiaat';
+            const ustazLabel = isSpecialLayout ? (active === 'All Jamiaat' ? 'Name' : 'Class') : 'Ustaz Name';
+            const jamiaLabel = isSpecialLayout ? (active === 'All Jamiaat' ? 'Jamia' : 'Ustaz Name') : 'Jamia Name';
 
             const showFullScreenLoader = (isLoading && !isDataLoaded) || 
                                          (active === "Overall Rank" && isRankLoading && !isRankDataLoaded) ||
@@ -1268,7 +1312,7 @@
             
             const classesForTop10 = ["Ibtidaiya", "Sale Awwal", "Sale Duwam", "Ula", "Saniya", "Salisa", "Rabia", "Khamisa"];
             const classesForTop3 = ["Sadisa", "Sabia", "Doratul Hadis", "Takhassusat", "Darulifta Ahle Sunnat"];
-            const classesForFullList = ["Khamisa", "Sadisa", "Sabia", "Doratul Hadis", "Takhassusat", "Darulifta Ahle Sunnat"];
+            const classesForFullList = ["Khamisa", "Sadisa", "Sabia", "Doratul Hadis", "Takhassusat", "Darulifta Ahle Sunnat", "All Jamiaat"];
             
             const DownloadIcon = () => (
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
@@ -1289,10 +1333,12 @@
 
                     <div className="max-w-7xl mx-auto p-4 sm:p-6">
                         <header className="mb-6 text-center">
-                            <h1 className="text-6xl sm:text-7xl font-['Bebas_Neue'] bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-indigo-600">
+                             <h1 className="text-6xl sm:text-7xl font-['Bebas_Neue'] bg-clip-text text-transparent bg-gradient-to-r from-sky-500 to-indigo-600">
                                 TELETHON 2025
                             </h1>
-                            <p className="text-sm text-slate-500 mt-1">Jamia-tul-Madina India Class/Jamia Wise Positions</p>
+                            <p className="text-2xl font-['Bebas_Neue'] text-slate-600 tracking-widest mt-2">FINAL BIG TELETHON DAY</p>
+                            <p className="text-4xl font-['Bebas_Neue'] text-amber-500 tracking-wider font-bold">GREAT GRAND FINAL</p>
+                            <p className="text-sm text-slate-500 mt-2">Jamia-tul-Madina India Class/Jamia Wise Positions</p>
                         </header>
 
                         <nav className="mb-4">
@@ -1316,7 +1362,7 @@
                         </nav>
                         
                         <div className="flex flex-col items-center justify-center p-3 bg-indigo-50 rounded-xl shadow-md mb-4 border border-indigo-200">
-                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result (Grand Final Competition)' : active}</h2>
+                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result' : active === 'Overall Rank' ? 'Overall Class Rank' : active}</h2>
                         </div>
 
                         <main className="relative">
@@ -1500,10 +1546,9 @@
                                         <div className="hidden md:block">
                                             <div className="grid grid-cols-12 items-center px-3 py-2 border-b text-sm font-semibold text-slate-700 bg-slate-50 rounded-t-lg">
                                                 <div className="col-span-1">Rank</div>
-                                                <div className="col-span-2">{ustazLabel}</div>
+                                                <div className="col-span-4">{ustazLabel}</div>
                                                 <div className="col-span-4 text-center">{jamiaLabel}</div>
-                                                <div className="col-span-3 text-right">Raqam</div>
-                                                <div className="col-span-2 text-right">Unit</div>
+                                                <div className="col-span-3 text-right">Unit</div>
                                             </div>
                                             <div className="space-y-1 mt-1">
                                                 {data.items.map((it, idx) => {
@@ -1511,10 +1556,9 @@
                                                     return (
                                                         <div key={it.__id} className={`grid grid-cols-12 items-center gap-4 p-3 rounded-lg transition-all duration-600 ${styleClass} ${it.__id === highlightKey ? "highlight-pulse" : ""}`}>
                                                             <div className="col-span-1 font-bold text-base">{idx + 1}</div>
-                                                            <div className="col-span-2 text-left text-sm font-medium">{active === 'Takhassusat' ? (it.jamia || "-") : (it.ustaz || "-")}</div>
-                                                            <div className={`col-span-4 text-center font-bold ${idx === 0 ? 'text-xl' : 'text-lg'}`}><span className="inline-flex items-center gap-2">{medalForIndex(idx)}<span>{active === 'Takhassusat' ? it.ustaz : it.jamia}</span></span></div>
-                                                            <div className="col-span-3 text-right text-xl font-bold">{it.__value.toLocaleString()}</div>
-                                                            <div className="col-span-2 text-right text-lg font-['Bebas_Neue'] text-indigo-600 tracking-wider">{it.unit || "-"}</div>
+                                                            <div className="col-span-4 text-left text-sm font-medium">{isSpecialLayout ? (it.jamia || "-") : (it.ustaz || "-")}</div>
+                                                            <div className={`col-span-4 text-center font-bold ${idx === 0 ? 'text-xl' : 'text-lg'}`}><span className="inline-flex items-center gap-2">{medalForIndex(idx)}<span>{isSpecialLayout ? it.ustaz : it.jamia}</span></span></div>
+                                                            <div className="col-span-3 text-right text-2xl font-['Bebas_Neue'] text-indigo-600 tracking-wider">{it.unit || "-"}</div>
                                                         </div>
                                                     );
                                                 })}
@@ -1525,12 +1569,15 @@
                                             {data.items.map((it, idx) => (
                                                 <div key={it.__id} className={`p-4 rounded-lg shadow-sm ${idx === 0 ? "bg-yellow-50 border-yellow-300" : "bg-white border-slate-100"} ${it.__id === highlightKey ? "highlight-pulse" : ""}`}>
                                                     <div className="flex items-center justify-between border-b pb-2 mb-2">
-                                                        <div className="text-xl font-bold text-slate-800 flex items-center gap-2"><span>{idx + 1}.</span><span className="truncate max-w-[200px]">{active === 'Takhassusat' ? it.ustaz : it.jamia}</span><span>{medalForIndex(idx)}</span></div>
-                                                        <div className="text-xl font-bold text-right">{it.__value.toLocaleString()}</div>
+                                                        <div className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                                                            <span>{idx + 1}.</span>
+                                                            <span className="truncate max-w-[150px] sm:max-w-[200px]">{isSpecialLayout ? it.ustaz : it.jamia}</span>
+                                                            <span>{medalForIndex(idx)}</span>
+                                                        </div>
+                                                        <div className="text-2xl font-bold text-right font-['Bebas_Neue'] text-indigo-600 tracking-wider">{it.unit || "-"}</div>
                                                     </div>
                                                     <div className="text-sm text-slate-600 flex justify-between">
-                                                        <div className="truncate mr-4"><span className="font-semibold">{ustazLabel}:</span> {active === 'Takhassusat' ? (it.jamia || "-") : (it.ustaz || "-")}</div>
-                                                        <div><span className="font-semibold">Unit:</span> <span className="font-['Bebas_Neue'] font-bold text-lg text-indigo-600">{it.unit || "-"}</span></div>
+                                                        <div className="truncate mr-4"><span className="font-semibold">{jamiaLabel}:</span> {isSpecialLayout ? (it.jamia || "-") : (it.ustaz || "-")}</div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -1553,5 +1600,6 @@
 
 </body>
 </html>
+
 
 
