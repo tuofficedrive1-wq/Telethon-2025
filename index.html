@@ -1103,7 +1103,8 @@
                 const sheetOptions = allOptions.filter(key => 
                     DEFAULT_SHEET_CONFIGS[key].id &&
                     key !== 'Darulifta Ahle Sunnat' &&
-                    key !== 'All Jamiaat'
+                    key !== 'All Jamiaat' &&
+                    key !== 'Region Competition'
                 );
                 
                 const fetchPromises = sheetOptions.map(async (opt) => {
@@ -1556,8 +1557,8 @@
                                                     return (
                                                         <div key={it.__id} className={`grid grid-cols-12 items-center gap-4 p-3 rounded-lg transition-all duration-600 ${styleClass} ${it.__id === highlightKey ? "highlight-pulse" : ""}`}>
                                                             <div className="col-span-1 font-bold text-base">{idx + 1}</div>
-                                                            <div className="col-span-4 text-left text-sm font-medium">{isSpecialLayout ? (it.jamia || "-") : (it.ustaz || "-")}</div>
-                                                            <div className={`col-span-4 text-center font-bold ${idx === 0 ? 'text-xl' : 'text-lg'}`}><span className="inline-flex items-center gap-2">{medalForIndex(idx)}<span>{isSpecialLayout ? it.ustaz : it.jamia}</span></span></div>
+                                                            <div className="col-span-4 text-left text-sm font-medium">{it.ustaz || "-"}</div>
+                                                            <div className={`col-span-4 text-center font-bold ${idx === 0 ? 'text-xl' : 'text-lg'}`}><span className="inline-flex items-center gap-2">{medalForIndex(idx)}<span>{it.jamia}</span></span></div>
                                                             <div className="col-span-3 text-right text-2xl font-['Bebas_Neue'] text-indigo-600 tracking-wider">{it.unit || "-"}</div>
                                                         </div>
                                                     );
@@ -1577,7 +1578,7 @@
                                                         <div className="text-2xl font-bold text-right font-['Bebas_Neue'] text-indigo-600 tracking-wider">{it.unit || "-"}</div>
                                                     </div>
                                                     <div className="text-sm text-slate-600 flex justify-between">
-                                                        <div className="truncate mr-4"><span className="font-semibold">{jamiaLabel}:</span> {isSpecialLayout ? (it.jamia || "-") : (it.ustaz || "-")}</div>
+                                                        <div className="truncate mr-4"><span className="font-semibold">{ustazLabel}:</span> {isSpecialLayout ? (it.jamia || "-") : (it.ustaz || "-")}</div>
                                                     </div>
                                                 </div>
                                             ))}
@@ -1600,6 +1601,4 @@
 
 </body>
 </html>
-
-
 
