@@ -184,7 +184,7 @@
             "All Jamiaat": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "JAMIA" },
             "Overall Rank": { id: null, sheet: null },
             "Result": { id: null, sheet: null },
-            "Region Competition": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "Region M" }
+            "Region Competition": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "REGION M" }
         };
 
         const POLL_INTERVAL_MS = 5000;
@@ -738,19 +738,18 @@
             const getUnit = (regionName) => {
                  if (!regionName) return 0;
                  const regionNames = Object.keys(regionData);
-                 const actualRegionName = regionNames.find(name => name.toLowerCase() === regionName.toLowerCase());
+                 const actualRegionName = regionNames.find(name => name.toLowerCase() === regionName.toLowerCase().trim());
                  return regionData[actualRegionName]?.totalUnit || 0;
             };
 
             const matchups = [
                 { id: 1, teamA: 'Ajmer', teamB: 'Dehli' },
-                { id: 2, teamA: 'Mumbai', teamB: 'HYDERABAD & BENGALORE' },
-                { id: 3, teamA: 'Kolkata', teamB: 'HYDERABAD' }
+                { id: 2, teamA: 'Mumbai', teamB: 'HYD+BENG+KOLKATA' },
             ];
 
             const calculateScore = (teamName) => {
-                if (teamName === 'HYDERABAD & BENGALORE') {
-                    return getUnit('HYDERABAD') + getUnit('BENGALORE');
+                if (teamName === 'HYD+BENG+KOLKATA') {
+                    return getUnit('HYD+BENGALORE') + getUnit('Kolkata');
                 }
                 return getUnit(teamName);
             };
@@ -1363,7 +1362,7 @@
                         </nav>
                         
                         <div className="flex flex-col items-center justify-center p-3 bg-indigo-50 rounded-xl shadow-md mb-4 border border-indigo-200">
-                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result' : active === 'Overall Rank' ? 'Overall Class Rank' : active}</h2>
+                            <h2 className="text-2xl font-['Bowlby_One_SC'] text-indigo-900 text-center uppercase">{active === 'Result' ? 'Result (Quarter Final Competition)' : active === 'Overall Rank' ? 'Overall Class Rank' : active}</h2>
                         </div>
 
                         <main className="relative">
@@ -1601,5 +1600,4 @@
 
 </body>
 </html>
-
 
