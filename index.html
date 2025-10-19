@@ -184,7 +184,8 @@
             "All Jamiaat": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "JAMIA" },
             "Overall Rank": { id: null, sheet: null },
             "Result": { id: null, sheet: null },
-            "Region Competition": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "REGION M" }
+            "Region Competition": { id: "1yHdj1almgPF4q_pPpSx7qZjfC1LoA6UChjit60_khfg", sheet: "REGION M" },
+            "Classes Competition": { id: null, sheet: null }
         };
 
         const POLL_INTERVAL_MS = 5000;
@@ -820,6 +821,91 @@
                 </div>
             );
         };
+        
+        const ClassesCompetitionView = ({ overallRankData, isLoading, error }) => {
+             const getUnit = (className) => {
+                const classData = overallRankData.find(c => c.className === className);
+                return classData ? classData.totalUnit : 0;
+            };
+
+            const matchups = [
+                { id: 1, teamA: 'Ibtidaiya', teamB: 'Sale Awwal' },
+                { id: 2, teamA: 'Sale Duwam', teamB: 'Ula' },
+                { id: 3, teamA: 'Saniya', teamB: 'Salisa' },
+                { id: 4, teamA: 'Rabia', teamB: 'Khamisa' },
+                { id: 5, teamA: 'Sadisa', teamB: 'Sabia' },
+                { id: 6, teamA: 'Doratul Hadis', teamB: 'Takhassusat' }
+            ];
+
+            if (isLoading && overallRankData.length === 0) {
+                 return (
+                    <div className="flex justify-center items-center p-10">
+                        <div className="loader w-10 h-10 border-t-sky-500 border-4"></div>
+                        <span className="ml-4 text-slate-500">Classes data load ho raha hai...</span>
+                    </div>
+                );
+            }
+
+            if (error) return <div className="text-center p-4 text-rose-600">{error}</div>;
+            
+            if (overallRankData.length === 0 && !isLoading) {
+                 return <div className="text-center p-10 text-slate-500">Koi class data nahi mila.</div>;
+            }
+
+            return (
+                <div className="bg-white border rounded-lg p-4 shadow-lg relative">
+                    <h2 className="text-2xl md:text-3xl font-bold text-slate-800 mb-6 text-center">Classes Competition Scoreboard</h2>
+                    <div className="space-y-6">
+                        {matchups.map(match => {
+                            const scoreA = getUnit(match.teamA);
+                            const scoreB = getUnit(match.teamB);
+                            const winner = scoreA > scoreB ? 'A' : (scoreB > scoreA ? 'B' : 'None');
+
+                            return (
+                                <div key={match.id} className="bg-slate-50 border border-slate-200 p-3 md:p-4 rounded-2xl shadow-md transform hover:scale-105 transition-transform duration-300">
+                                    <div className="md:hidden">
+                                        <div className={`flex justify-between items-center p-2 rounded-lg mb-2 ${winner === 'A' ? 'bg-green-50' : ''}`}>
+                                            <span className={`text-lg font-['Bowlby_One_SC'] uppercase ${winner === 'A' ? 'text-green-600' : 'text-slate-700'}`}>{match.teamA}</span>
+                                            <span className={`text-2xl font-['Bebas_Neue'] tracking-wider ${winner === 'A' ? 'text-green-500' : 'text-slate-500'}`}>
+                                                <AnimatedNumber value={scoreA} formatter={(val) => val.toFixed(1)} />
+                                            </span>
+                                        </div>
+                                        <div className="text-center text-slate-400 font-bold my-1 text-xl">VS</div>
+                                        <div className={`flex justify-between items-center p-2 rounded-lg ${winner === 'B' ? 'bg-green-50' : ''}`}>
+                                            <span className={`text-lg font-['Bowlby_One_SC'] uppercase ${winner === 'B' ? 'text-green-600' : 'text-slate-700'}`}>{match.teamB}</span>
+                                            <span className={`text-2xl font-['Bebas_Neue'] tracking-wider ${winner === 'B' ? 'text-green-500' : 'text-slate-500'}`}>
+                                                <AnimatedNumber value={scoreB} formatter={(val) => val.toFixed(1)} />
+                                            </span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="hidden md:flex justify-around items-center text-center">
+                                        <div className={`flex-1 flex flex-col items-center p-2 rounded-lg ${winner === 'A' ? 'font-extrabold' : ''}`}>
+                                            <div className={`text-xl md:text-2xl font-['Bowlby_One_SC'] uppercase ${winner === 'A' ? 'text-green-600' : 'text-slate-700'}`}>{match.teamA}</div>
+                                            <div className="text-xs text-slate-500">Class</div>
+                                        </div>
+                                        <div className="flex items-center">
+                                             <div className={`text-3xl md:text-5xl font-['Bebas_Neue'] p-2 rounded-lg tracking-wider ${winner === 'A' ? 'text-green-500' : 'text-slate-500'}`}>
+                                                <AnimatedNumber value={scoreA} formatter={(val) => val.toFixed(1)} />
+                                             </div>
+                                             <div className="text-2xl md:text-4xl font-extrabold text-slate-400 mx-4">VS</div>
+                                             <div className={`text-3xl md:text-5xl font-['Bebas_Neue'] p-2 rounded-lg tracking-wider ${winner === 'B' ? 'text-green-500' : 'text-slate-500'}`}>
+                                                 <AnimatedNumber value={scoreB} formatter={(val) => val.toFixed(1)} />
+                                             </div>
+                                        </div>
+                                        <div className={`flex-1 flex flex-col items-center p-2 rounded-lg ${winner === 'B' ? 'font-extrabold' : ''}`}>
+                                             <div className={`text-xl md:text-2xl font-['Bowlby_One_SC'] uppercase ${winner === 'B' ? 'text-green-600' : 'text-slate-700'}`}>{match.teamB}</div>
+                                            <div className="text-xs text-slate-500">Class</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            );
+        };
+
 
         function TelethoneEnhancedLive() {
             const allOptions = Object.keys(DEFAULT_SHEET_CONFIGS);
@@ -1269,12 +1355,13 @@
                     "Overall Rank": loadOverallRank,
                     "Region Competition": loadRegionData,
                     "Result": loadAllResults,
+                    "Classes Competition": loadOverallRank,
                     "Default": loadActiveSheet,
                 };
                 const currentAction = actionMap[active] || actionMap["Default"];
                 
                 const { id } = getActiveConfig();
-                if (active !== "Result" && active !== "Overall Rank" && active !== "Region Competition" && !isValidSheetId(id)) {
+                if (active !== "Result" && active !== "Overall Rank" && active !== "Region Competition" && active !== "Classes Competition" && !isValidSheetId(id)) {
                      setData({ items: [] });
                      setError(null);
                      setLoading(false);
@@ -1306,7 +1393,8 @@
 
             const showFullScreenLoader = (isLoading && !isDataLoaded) || 
                                          (active === "Overall Rank" && isRankLoading && !isRankDataLoaded) ||
-                                         (active === "Region Competition" && isRegionLoading && Object.keys(regionData).length === 0);
+                                         (active === "Region Competition" && isRegionLoading && Object.keys(regionData).length === 0) ||
+                                         (active === "Classes Competition" && isRankLoading && overallRankData.length === 0);
             
             const classesForTop10 = ["Ibtidaiya", "Sale Awwal", "Sale Duwam", "Ula", "Saniya", "Salisa", "Rabia", "Khamisa"];
             const classesForTop3 = ["Sadisa", "Sabia", "Doratul Hadis", "Takhassusat", "Darulifta Ahle Sunnat"];
@@ -1495,6 +1583,8 @@
                                          <div className="text-lg font-medium text-slate-500">Countdown time not set.</div>
                                     )}
                                 </div>
+                            ) : active === "Classes Competition" ? (
+                                <ClassesCompetitionView overallRankData={overallRankData} isLoading={isRankLoading} error={rankError} />
                             ) : active === "Region Competition" ? (
                                 <RegionCompetitionView regionData={regionData} isLoading={isRegionLoading} error={regionError} />
                             ) : (
@@ -1597,6 +1687,4 @@
 
 </body>
 </html>
-
-
 
