@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asatiza Detail Form - Telethon 2026</title>
+    <title>Asatiza Detail Form - Telethon 2025</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Firebase SDKs -->
+    <!-- Firebase SDKs (Isme Storage ka link bhi add kiya hai) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-storage-compat.js"></script>
 
     <style>body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }</style>
 </head>
@@ -52,6 +53,13 @@
                 </select>
             </div>
             
+            <!-- PHOTO UPLOAD SECTION -->
+            <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-lg">
+                <label class="block text-sm font-semibold text-indigo-700 mb-1">Aapki Tasveer (Photo)</label>
+                <input type="file" id="teacherPhoto" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 transition">
+                <p class="text-xs text-slate-500 mt-1">Photo dena zaroori nahi hai, par denge to winner poster par aayegi.</p>
+            </div>
+            
             <button type="submit" id="submitBtn" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition mt-4 shadow-md">
                 Detail Jama Karein
             </button>
@@ -75,20 +83,42 @@
             appId: "APP_ID"
         };
         firebase.initializeApp(firebaseConfig);
+        
         const db = firebase.firestore();
+        const storage = firebase.storage(); // Storage Initialize kiya
 
         document.getElementById('asatizaForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
-            btn.innerHTML = "Submitting..."; btn.disabled = true;
+            btn.innerHTML = "Form Submit Ho Raha Hai..."; btn.disabled = true;
 
             try {
-                // Database me 'asatiza_details' naam ke collection me data save hoga
+                let photoUrl = "";
+                const photoInput = document.getElementById('teacherPhoto').files[0];
+
+                // Agar teacher ne photo select ki hai, toh pehle use upload karein
+                if (photoInput) {
+                    btn.innerHTML = "Photo Upload ho rahi hai, please wait...";
+                    
+                    // Photo ka ek anokha (unique) naam banate hain taaki mix na ho
+                    const fileName = Date.now() + "_" + photoInput.name; 
+                    const storageRef = storage.ref('asatiza_photos/' + fileName);
+                    
+                    // Photo Firebase me daali
+                    const uploadTask = await storageRef.put(photoInput);
+                    // Upload hone ke baad us photo ka direct link nikal liya
+                    photoUrl = await uploadTask.ref.getDownloadURL();
+                }
+
+                btn.innerHTML = "Detail Data Save ho raha hai...";
+
+                // Ab Text Data aur Photo ka Link (agar hai to) Database me save karein
                 await db.collection('asatiza_details').add({
                     jamiaName: document.getElementById('jamiaName').value.trim(),
                     ustazName: document.getElementById('ustazName').value.trim(),
                     mobileNo: document.getElementById('mobileNo').value.trim(),
                     className: document.getElementById('className').value,
+                    photoUrl: photoUrl, // Ye naya column add ho gaya
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
