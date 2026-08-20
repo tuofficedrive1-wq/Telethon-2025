@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asatiza Detail Form - Telethon 2026</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
+
+    <style>body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }</style>
+</head>
+<body class="p-4 flex justify-center items-center min-h-screen">
+
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg border border-slate-200">
+        <div class="text-center mb-6 border-b pb-4">
+            <h1 class="text-2xl font-bold text-indigo-700">Asatiza Registration Form</h1>
+            <p class="text-slate-500 text-sm mt-1">Telethon 2025 ke liye apni detail darj karein</p>
+        </div>
+
+        <form id="asatizaForm" class="space-y-4">
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Jamia / Madarsa Ka Naam</label>
+                <input type="text" id="jamiaName" required placeholder="Jaise: Jamia-tul-Madina Chhatarpur" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Aapka Naam (Muallim / Teacher)</label>
+                <input type="text" id="ustazName" required placeholder="Apna pura naam likhein" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Mobile / WhatsApp No.</label>
+                <input type="number" id="mobileNo" required placeholder="Jaise: 9876543210" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-1">Aap Kis Darje Ke Muallim Hain?</label>
+                <select id="className" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
+                    <option value="">Class Select Karein...</option>
+                    <option value="Ibtidaiya">Ibtidaiya</option>
+                    <option value="Sale Awwal">Sale Awwal</option>
+                    <option value="Sale Duwam">Sale Duwam</option>
+                    <option value="Ula">Ula</option>
+                    <option value="Saniya">Saniya</option>
+                    <option value="Salisa">Salisa</option>
+                    <option value="Rabia">Rabia</option>
+                    <option value="Khamisa">Khamisa</option>
+                    <option value="Sadisa">Sadisa</option>
+                    <option value="Sabia">Sabia</option>
+                    <option value="Doratul Hadis">Doratul Hadis</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="submitBtn" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition mt-4 shadow-md">
+                Detail Jama Karein
+            </button>
+        </form>
+
+        <div id="successMsg" class="hidden mt-4 p-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-center font-bold">
+            Jazakallah! Aapki detail successfully jama ho gayi hai.
+        </div>
+    </div>
+
+    <script>
+        // ========================================================
+        // 🛑 APNA FIREBASE CONFIG YAHAN PASTE KAREIN 🛑
+        // ========================================================
+        const firebaseConfig = {
+            apiKey: "AAPKI_API_KEY",
+            authDomain: "AAPKA_PROJECT.firebaseapp.com",
+            projectId: "AAPKA_PROJECT_ID",
+            storageBucket: "AAPKA_PROJECT.appspot.com",
+            messagingSenderId: "SENDER_ID",
+            appId: "APP_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        document.getElementById('asatizaForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.innerHTML = "Submitting..."; btn.disabled = true;
+
+            try {
+                // Database me 'asatiza_details' naam ke collection me data save hoga
+                await db.collection('asatiza_details').add({
+                    jamiaName: document.getElementById('jamiaName').value.trim(),
+                    ustazName: document.getElementById('ustazName').value.trim(),
+                    mobileNo: document.getElementById('mobileNo').value.trim(),
+                    className: document.getElementById('className').value,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                });
+
+                document.getElementById('asatizaForm').classList.add('hidden');
+                document.getElementById('successMsg').classList.remove('hidden');
+            } catch (error) {
+                alert("Error: " + error.message);
+                btn.innerHTML = "Detail Jama Karein"; btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
