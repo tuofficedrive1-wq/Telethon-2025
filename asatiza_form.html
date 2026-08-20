@@ -87,8 +87,8 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // 🛑 APNA GOOGLE APPS SCRIPT WEB APP URL YAHAN DALEIN 🛑
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxK6YAcnVs2gLUW6kJRdbnxI97UOkbkpm-q_NTi8PEznG2332-g0gBjB8B26QGIIGmrOw/exec";
+        // 🛑 APNA NAYA GOOGLE APPS SCRIPT WEB APP URL YAHAN DALEIN 🛑
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzdiW-8F6voekbDcoEZ28GUP_HPqhYMGmKu1h1rQ2NFSwY15wkqBd3bysphdwH2Vt-Nfg/exec";
 
         document.getElementById('asatizaForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -99,11 +99,9 @@
                 let photoUrl = "";
                 const photoInput = document.getElementById('teacherPhoto').files[0];
 
-                // Agar photo select ki gayi hai, to Drive me upload karein
                 if (photoInput) {
                     btn.innerHTML = "Photo Drive me upload ho rahi hai (Isme 10-15 second lag sakte hain)...";
                     
-                    // File ko Base64 text me badalna (taaki internet par bheji ja sake)
                     const base64Data = await new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -117,16 +115,19 @@
                         base64: base64Data
                     };
 
-                    // Google Apps Script ko photo bhejna
+                    // YAHAN HUMNE HEADERS ADD KIYE HAIN TAQKI CORS ERROR NA AAYE
                     const response = await fetch(GOOGLE_SCRIPT_URL, {
                         method: "POST",
+                        headers: {
+                            "Content-Type": "text/plain;charset=utf-8",
+                        },
                         body: JSON.stringify(payload)
                     });
                     
                     const result = await response.json();
                     
                     if (result.status === "success") {
-                        photoUrl = result.url; // Drive se aayi hui photo link
+                        photoUrl = result.url;
                     } else {
                         throw new Error("Photo upload fail: " + result.message);
                     }
@@ -134,7 +135,7 @@
 
                 btn.innerHTML = "Detail Data Save ho raha hai...";
 
-                // Firestore Database me baki text data aur Drive ki photo link save karna
+                // Baaki ka code waisa hi rahega
                 await db.collection('asatiza_details').add({
                     jamiaName: document.getElementById('jamiaName').value.trim(),
                     ustazName: document.getElementById('ustazName').value.trim(),
