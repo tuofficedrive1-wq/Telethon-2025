@@ -7,114 +7,147 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     
-    <!-- Firebase Compat SDKs (Aasan setup ke liye) -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
-    <style>
-        body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }
-    </style>
+    <style>body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; } .hidden { display: none !important; }</style>
 </head>
 <body class="p-6">
 
-    <div class="max-w-6xl mx-auto">
-        <header class="mb-8 flex justify-between items-center bg-indigo-600 text-white p-4 rounded-xl shadow-lg">
+    <div class="max-w-7xl mx-auto">
+        <!-- Header & Tabs -->
+        <header class="mb-6 flex flex-col md:flex-row justify-between items-center bg-indigo-600 text-white p-4 rounded-xl shadow-lg gap-4">
             <div>
-                <h1 class="text-2xl font-bold">Telethon - Admin Panel</h1>
-                <p class="text-sm opacity-80">Manage Teachers and Database</p>
+                <h1 class="text-2xl font-bold">Telethon 2025 - Admin Panel</h1>
+                <p class="text-sm opacity-80">Manage Zimmedars and Asatiza Reports</p>
+            </div>
+            <!-- Tabs Buttons -->
+            <div class="flex gap-2 bg-indigo-800 p-1 rounded-lg">
+                <button onclick="switchTab('zimmedarTab')" id="btnZimmedar" class="px-4 py-2 bg-white text-indigo-700 font-bold rounded-md shadow transition">Zimmedar Manage</button>
+                <button onclick="switchTab('asatizaTab')" id="btnAsatiza" class="px-4 py-2 text-white font-bold rounded-md hover:bg-indigo-700 transition">Asatiza Detail</button>
             </div>
         </header>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- User Banane ka Form -->
-            <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200">
-                <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">Naya Teacher Add Karein</h2>
+        <!-- ========================================== -->
+        <!-- TAB 1: ZIMMEDAR MANAGE (Pehle Wala System) -->
+        <!-- ========================================== -->
+        <div id="zimmedarTab" class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Form -->
+            <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200 h-fit">
+                <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">Naya Zimmedar Add Karein</h2>
                 <form id="createUserForm" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-semibold text-slate-600">Ustaz Name (Teacher Ka Naam)</label>
-                        <input type="text" id="ustazName" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <label class="block text-sm font-semibold">Zimmedar Ka Naam</label>
+                        <input type="text" id="ustazName" required class="w-full px-3 py-2 border rounded-lg">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-slate-600">Jamia Name</label>
-                        <input type="text" id="jamiaName" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <label class="block text-sm font-semibold">Jamia Name (Zimmedar Ka)</label>
+                        <input type="text" id="jamiaName" required class="w-full px-3 py-2 border rounded-lg">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-slate-600">Assign Class</label>
-                        <select id="assignedClass" required class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        <label class="block text-sm font-semibold">Assign Class</label>
+                        <select id="assignedClass" required class="w-full px-3 py-2 border rounded-lg">
                             <option value="">Class Select Karein...</option>
                             <option value="Ibtidaiya">Ibtidaiya</option>
                             <option value="Sale Awwal">Sale Awwal</option>
                             <option value="Ula">Ula</option>
-                            <!-- Aap yahan baaki classes bhi add kar sakte hain -->
+                            <!-- Zaroorat ke mutabiq classes add kar sakte hain -->
                         </select>
                     </div>
                     <div class="pt-2 border-t">
-                        <label class="block text-sm font-semibold text-slate-600 text-indigo-600">Username (Login ke liye)</label>
-                        <input type="text" id="username" required placeholder="Jaise: zaid_ula" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-indigo-50">
-                        <p class="text-xs text-slate-500 mt-1">Bina space ke chote letters likhein.</p>
+                        <label class="block text-sm font-semibold text-indigo-600">Username (Login ke liye)</label>
+                        <input type="text" id="username" required placeholder="Jaise: zaid_ula" class="w-full px-3 py-2 border rounded-lg bg-indigo-50">
                     </div>
                     <div>
-                        <label class="block text-sm font-semibold text-slate-600 text-indigo-600">Password</label>
-                        <input type="text" id="password" required placeholder="Kam se kam 6 huroof" class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-indigo-50">
+                        <label class="block text-sm font-semibold text-indigo-600">Password</label>
+                        <input type="text" id="password" required placeholder="Kam se kam 6 huroof" class="w-full px-3 py-2 border rounded-lg bg-indigo-50">
                     </div>
-                    <button type="submit" id="submitBtn" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition">
-                        Account Banayein
-                    </button>
+                    <button type="submit" id="submitBtn" class="w-full bg-indigo-600 text-white font-bold py-2 rounded-lg hover:bg-indigo-700">Account Banayein</button>
                 </form>
             </div>
 
-            <!-- List of Users -->
+            <!-- Table -->
             <div class="col-span-2 bg-white p-6 rounded-xl shadow-md border border-slate-200">
-                <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">Registered Teachers</h2>
+                <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">Registered Zimmedars</h2>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-100 text-slate-600 text-sm">
                                 <th class="p-3 border-b">Username</th>
-                                <th class="p-3 border-b">Ustaz Name</th>
+                                <th class="p-3 border-b">Zimmedar Name</th>
                                 <th class="p-3 border-b">Jamia</th>
                                 <th class="p-3 border-b">Class</th>
                             </tr>
                         </thead>
-                        <tbody id="userTableBody" class="text-sm">
-                            <tr>
-                                <td colspan="4" class="p-4 text-center text-slate-500">Loading data...</td>
-                            </tr>
-                        </tbody>
+                        <tbody id="userTableBody" class="text-sm"></tbody>
                     </table>
                 </div>
             </div>
         </div>
+
+        <!-- ========================================== -->
+        <!-- TAB 2: ASATIZA REPORT (Naya System)        -->
+        <!-- ========================================== -->
+        <div id="asatizaTab" class="hidden bg-white p-6 rounded-xl shadow-md border border-slate-200">
+            <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2 flex justify-between items-center">
+                <span>Asatiza Registration Reports</span>
+                <span class="text-sm bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-semibold">Live Updates</span>
+            </h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-100 text-slate-600 text-sm">
+                            <th class="p-3 border-b">Jamia Name</th>
+                            <th class="p-3 border-b">Ustaz Name</th>
+                            <th class="p-3 border-b">Mobile No.</th>
+                            <th class="p-3 border-b">Darja (Class)</th>
+                            <th class="p-3 border-b">Date/Time</th>
+                        </tr>
+                    </thead>
+                    <tbody id="asatizaTableBody" class="text-sm">
+                        <tr><td colspan="5" class="p-4 text-center text-slate-500">Loading records...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
     </div>
 
     <script>
         // ========================================================
-        // 🛑 STEP 1: APNA FIREBASE CONFIG YAHAN PASTE KAREIN 🛑
+        // 🛑 APNA FIREBASE CONFIG YAHAN PASTE KAREIN 🛑
         // ========================================================
-      
-const firebaseConfig = {
-  apiKey: "AIzaSyC87_ca7MsGB2WjOnr6dC-IYL78TYx0Oyg",
-  authDomain: "telethon-28c88.firebaseapp.com",
-  projectId: "telethon-28c88",
-  storageBucket: "telethon-28c88.firebasestorage.app",
-  messagingSenderId: "609452116316",
-  appId: "1:609452116316:web:e940fc5dc4537b34551999",
-  measurementId: "G-FYS0PJLQQB"
-};
+        const firebaseConfig = {
+            apiKey: "AAPKI_API_KEY",
+            authDomain: "AAPKA_PROJECT.firebaseapp.com",
+            projectId: "AAPKA_PROJECT_ID",
+            storageBucket: "AAPKA_PROJECT.appspot.com",
+            messagingSenderId: "SENDER_ID",
+            appId: "APP_ID"
+        };
 
-
-        // Main App Initialize (Database ke liye)
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
-
-        // Secondary App Initialize (Sirf User Create karne ke liye, taaki admin logout na ho)
         const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
         const secondaryAuth = secondaryApp.auth();
 
-        // ========================================================
-        // USER CREATE KARNE KA LOGIC (Username trick ke sath)
-        // ========================================================
+        // --- TAB SWITCH LOGIC ---
+        function switchTab(tabId) {
+            document.getElementById('zimmedarTab').classList.add('hidden');
+            document.getElementById('asatizaTab').classList.add('hidden');
+            document.getElementById('btnZimmedar').className = "px-4 py-2 text-white font-bold rounded-md hover:bg-indigo-700 transition";
+            document.getElementById('btnAsatiza').className = "px-4 py-2 text-white font-bold rounded-md hover:bg-indigo-700 transition";
+
+            document.getElementById(tabId).classList.remove('hidden');
+            if(tabId === 'zimmedarTab') {
+                document.getElementById('btnZimmedar').className = "px-4 py-2 bg-white text-indigo-700 font-bold rounded-md shadow transition";
+            } else {
+                document.getElementById('btnAsatiza').className = "px-4 py-2 bg-white text-indigo-700 font-bold rounded-md shadow transition";
+            }
+        }
+
+        // --- ZIMMEDAR CREATE LOGIC ---
         document.getElementById('createUserForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             const btn = document.getElementById('submitBtn');
@@ -125,72 +158,54 @@ const firebaseConfig = {
             const assignedClass = document.getElementById('assignedClass').value;
             const username = document.getElementById('username').value.trim().toLowerCase();
             const password = document.getElementById('password').value;
-
-            // Username Trick: Piche @telethon.com laga diya
             const fakeEmail = username + "@telethon.com";
 
             try {
-                // 1. Firebase Auth me user banayein (Secondary App se)
                 const userCredential = await secondaryAuth.createUserWithEmailAndPassword(fakeEmail, password);
-                const uid = userCredential.user.uid;
-
-                // 2. Turant us account se sign out ho jayein
                 await secondaryAuth.signOut();
-
-                // 3. User ki details Firestore Database me save karein
-                await db.collection('users').doc(uid).set({
-                    username: username,
-                    ustazName: ustazName,
-                    jamiaName: jamiaName,
-                    assignedClass: assignedClass,
-                    role: "teacher",
+                await db.collection('users').doc(userCredential.user.uid).set({
+                    username: username, ustazName: ustazName, jamiaName: jamiaName,
+                    assignedClass: assignedClass, role: "zimmedar",
                     createdAt: firebase.firestore.FieldValue.serverTimestamp()
                 });
-
-                alert("✅ Teacher ka account successfully ban gaya!");
+                alert("✅ Zimmedar ka account successfully ban gaya!");
                 document.getElementById('createUserForm').reset();
-                loadUsers(); // Table ko update karo
-
-            } catch (error) {
-                console.error(error);
-                alert("❌ Error: " + error.message);
-            } finally {
-                btn.innerHTML = "Account Banayein"; btn.disabled = false;
-            }
+            } catch (error) { alert("❌ Error: " + error.message); } 
+            finally { btn.innerHTML = "Account Banayein"; btn.disabled = false; }
         });
 
-        // ========================================================
-        // DATABASE SE USERS KO NIKAL KAR TABLE ME DIKHANA
-        // ========================================================
-        function loadUsers() {
-            db.collection('users').where("role", "==", "teacher").onSnapshot((snapshot) => {
-                const tbody = document.getElementById('userTableBody');
-                tbody.innerHTML = ""; // Purana data hatao
-
-                if (snapshot.empty) {
-                    tbody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">Koi teacher add nahi hua abhi.</td></tr>';
-                    return;
-                }
-
-                snapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const tr = document.createElement('tr');
-                    tr.className = "border-b hover:bg-slate-50 transition";
-                    tr.innerHTML = `
-                        <td class="p-3 font-semibold text-indigo-600">${data.username}</td>
-                        <td class="p-3">${data.ustazName}</td>
-                        <td class="p-3">${data.jamiaName}</td>
-                        <td class="p-3"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-bold">${data.assignedClass}</span></td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            }, (error) => {
-                console.log("Error loading users:", error);
+        // --- LOAD ZIMMEDARS ---
+        db.collection('users').where("role", "==", "zimmedar").onSnapshot((snapshot) => {
+            const tbody = document.getElementById('userTableBody');
+            tbody.innerHTML = snapshot.empty ? '<tr><td colspan="4" class="p-4 text-center text-slate-500">Koi zimmedar add nahi hua abhi.</td></tr>' : "";
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                tbody.innerHTML += `<tr class="border-b hover:bg-slate-50">
+                    <td class="p-3 font-semibold text-indigo-600">${data.username}</td>
+                    <td class="p-3">${data.ustazName}</td>
+                    <td class="p-3">${data.jamiaName}</td>
+                    <td class="p-3"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-bold">${data.assignedClass}</span></td>
+                </tr>`;
             });
-        }
+        });
 
-        // Page khulte hi users ko load karo
-        window.onload = loadUsers;
+        // --- LOAD ASATIZA DETAILS (Naya Logic) ---
+        db.collection('asatiza_details').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
+            const tbody = document.getElementById('asatizaTableBody');
+            tbody.innerHTML = snapshot.empty ? '<tr><td colspan="5" class="p-4 text-center text-slate-500">Abhi tak kisi teacher ne form nahi bhara.</td></tr>' : "";
+            
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                const date = data.timestamp ? data.timestamp.toDate().toLocaleString('en-IN') : 'Just now';
+                tbody.innerHTML += `<tr class="border-b hover:bg-slate-50">
+                    <td class="p-3 font-bold text-slate-800">${data.jamiaName}</td>
+                    <td class="p-3 text-slate-700">${data.ustazName}</td>
+                    <td class="p-3 font-semibold text-emerald-600">${data.mobileNo}</td>
+                    <td class="p-3"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-bold">${data.className}</span></td>
+                    <td class="p-3 text-xs text-slate-500">${date}</td>
+                </tr>`;
+            });
+        });
     </script>
 </body>
 </html>
