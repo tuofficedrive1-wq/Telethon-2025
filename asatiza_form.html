@@ -71,10 +71,11 @@
     </div>
 
     <script>
+        
         // ========================================================
         // 🛑 APNA FIREBASE CONFIG YAHAN PASTE KAREIN 🛑
         // ========================================================
-        const firebaseConfig = {
+         const firebaseConfig = {
   apiKey: "AIzaSyC87_ca7MsGB2WjOnr6dC-IYL78TYx0Oyg",
   authDomain: "telethon-28c88.firebaseapp.com",
   projectId: "telethon-28c88",
@@ -84,9 +85,10 @@
   measurementId: "G-FYS0PJLQQB"
 };
         firebase.initializeApp(firebaseConfig);
-        
         const db = firebase.firestore();
-        const storage = firebase.storage(); // Storage Initialize kiya
+
+        // 🛑 APNA GOOGLE APPS SCRIPT WEB APP URL YAHAN DALEIN 🛑
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxK6YAcnVs2gLUW6kJRdbnxI97UOkbkpm-q_NTi8PEznG2332-g0gBjB8B26QGIIGmrOw/exec";
 
         document.getElementById('asatizaForm').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -97,35 +99,55 @@
                 let photoUrl = "";
                 const photoInput = document.getElementById('teacherPhoto').files[0];
 
-                // Agar teacher ne photo select ki hai, toh pehle use upload karein
+                // Agar photo select ki gayi hai, to Drive me upload karein
                 if (photoInput) {
-                    btn.innerHTML = "Photo Upload ho rahi hai, please wait...";
+                    btn.innerHTML = "Photo Drive me upload ho rahi hai (Isme 10-15 second lag sakte hain)...";
                     
-                    // Photo ka ek anokha (unique) naam banate hain taaki mix na ho
-                    const fileName = Date.now() + "_" + photoInput.name; 
-                    const storageRef = storage.ref('asatiza_photos/' + fileName);
+                    // File ko Base64 text me badalna (taaki internet par bheji ja sake)
+                    const base64Data = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result.split(',')[1]);
+                        reader.onerror = error => reject(error);
+                        reader.readAsDataURL(photoInput);
+                    });
+
+                    const payload = {
+                        name: Date.now() + "_" + photoInput.name,
+                        mimeType: photoInput.type,
+                        base64: base64Data
+                    };
+
+                    // Google Apps Script ko photo bhejna
+                    const response = await fetch(GOOGLE_SCRIPT_URL, {
+                        method: "POST",
+                        body: JSON.stringify(payload)
+                    });
                     
-                    // Photo Firebase me daali
-                    const uploadTask = await storageRef.put(photoInput);
-                    // Upload hone ke baad us photo ka direct link nikal liya
-                    photoUrl = await uploadTask.ref.getDownloadURL();
+                    const result = await response.json();
+                    
+                    if (result.status === "success") {
+                        photoUrl = result.url; // Drive se aayi hui photo link
+                    } else {
+                        throw new Error("Photo upload fail: " + result.message);
+                    }
                 }
 
                 btn.innerHTML = "Detail Data Save ho raha hai...";
 
-                // Ab Text Data aur Photo ka Link (agar hai to) Database me save karein
+                // Firestore Database me baki text data aur Drive ki photo link save karna
                 await db.collection('asatiza_details').add({
                     jamiaName: document.getElementById('jamiaName').value.trim(),
                     ustazName: document.getElementById('ustazName').value.trim(),
                     mobileNo: document.getElementById('mobileNo').value.trim(),
                     className: document.getElementById('className').value,
-                    photoUrl: photoUrl, // Ye naya column add ho gaya
+                    photoUrl: photoUrl, 
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
 
                 document.getElementById('asatizaForm').classList.add('hidden');
                 document.getElementById('successMsg').classList.remove('hidden');
             } catch (error) {
+                console.error(error);
                 alert("Error: " + error.message);
                 btn.innerHTML = "Detail Jama Karein"; btn.disabled = false;
             }
