@@ -166,6 +166,15 @@
                             <option value="Doratul Hadis">Doratul Hadis</option>
                         </select>
                     </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-600 mb-1.5">Section <span class="text-slate-400 font-normal text-xs">(Agar Hai To Select Karein)</span></label>
+                        <div id="sectionGroup" class="flex gap-2 flex-wrap">
+                            <button type="button" data-section="A" class="section-pill w-11 h-11 rounded-xl border border-slate-200 bg-white text-slate-600 font-semibold text-[15px] transition hover:border-gold">A</button>
+                            <button type="button" data-section="B" class="section-pill w-11 h-11 rounded-xl border border-slate-200 bg-white text-slate-600 font-semibold text-[15px] transition hover:border-gold">B</button>
+                            <button type="button" data-section="C" class="section-pill w-11 h-11 rounded-xl border border-slate-200 bg-white text-slate-600 font-semibold text-[15px] transition hover:border-gold">C</button>
+                            <button type="button" data-section="D" class="section-pill w-11 h-11 rounded-xl border border-slate-200 bg-white text-slate-600 font-semibold text-[15px] transition hover:border-gold">D</button>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Photo section -->
@@ -288,6 +297,27 @@
 
         jamiaSelect.addEventListener('change', updateTrail);
 
+        // ========================================================
+        // SECTION SELECTOR (A/B/C/D) — optional, appended to className on save
+        // ========================================================
+        let selectedSection = "";
+        const sectionButtons = document.querySelectorAll('.section-pill');
+        sectionButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const val = btn.dataset.section;
+                selectedSection = (selectedSection === val) ? "" : val;
+                sectionButtons.forEach(b => {
+                    const active = b.dataset.section === selectedSection;
+                    b.classList.toggle('bg-ink', active);
+                    b.classList.toggle('text-white', active);
+                    b.classList.toggle('border-ink', active);
+                    b.classList.toggle('bg-white', !active);
+                    b.classList.toggle('text-slate-600', !active);
+                    b.classList.toggle('border-slate-200', !active);
+                });
+            });
+        });
+
          // ========================================================
         // 🛑 APNA FIREBASE CONFIG YAHAN PASTE KAREIN 🛑
         // ========================================================
@@ -377,6 +407,10 @@
 
                 submitBtnText.textContent = "Detail Data Save ho raha hai...";
 
+                // Class aur Section ko mila kar ek value banayein (jaise "Ula A")
+                const classValue = document.getElementById('className').value;
+                const finalClassName = selectedSection ? (classValue + ' ' + selectedSection) : classValue;
+
                 // Firestore Database me save karein (Naye Region aur State ke sath)
                 await db.collection('asatiza_details').add({
                     region: regionSelect.value,
@@ -384,7 +418,7 @@
                     jamiaName: jamiaSelect.value,
                     ustazName: document.getElementById('ustazName').value.trim(),
                     mobileNo: document.getElementById('mobileNo').value.trim(),
-                    className: document.getElementById('className').value,
+                    className: finalClassName,
                     photoUrl: photoUrl,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
