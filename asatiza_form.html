@@ -2,91 +2,201 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Asatiza Detail Form - Telethon 2025</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#16213F">
+    <title>Asatiza Detail Form - Telethon 2026</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
-    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        ink: { DEFAULT: '#16213F', 700: '#101A33' },
+                        gold: { DEFAULT: '#C4952F', 600: '#A97C22', 100: '#F5E9C9', 50: '#FBF6EB' }
+                    },
+                    fontFamily: {
+                        display: ['Fraunces', 'serif'],
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
 
-    <style>body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; }</style>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #F5F6F8; }
+        .font-display { font-family: 'Fraunces', serif; }
+
+        .bg-texture {
+            background-image: radial-gradient(rgba(22, 33, 63, 0.08) 1px, transparent 1px);
+            background-size: 18px 18px;
+        }
+
+        .select-field {
+            appearance: none;
+            -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2394A3B8' stroke-width='2'%3E%3Cpath d='M6 8l4 4 4-4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.85rem center;
+            background-size: 1.1rem;
+        }
+        .select-field:disabled { background-image: none; }
+
+        @keyframes fade-up {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up { animation: fade-up 0.5s ease-out both; }
+
+        @keyframes trail-in {
+            from { opacity: 0; transform: scale(0.92); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .trail-chip { animation: trail-in 0.2s ease-out both; }
+
+        .check-path {
+            stroke-dasharray: 30;
+            stroke-dashoffset: 30;
+            animation: draw-check 0.5s ease-out 0.15s forwards;
+        }
+        @keyframes draw-check { to { stroke-dashoffset: 0; } }
+
+        @media (prefers-reduced-motion: reduce) {
+            .animate-fade-up, .trail-chip, .check-path { animation: none !important; opacity: 1 !important; transform: none !important; stroke-dashoffset: 0 !important; }
+        }
+
+        input:focus-visible, select:focus-visible, button:focus-visible {
+            outline: 2px solid #C4952F;
+            outline-offset: 2px;
+        }
+    </style>
 </head>
-<body class="p-4 flex justify-center items-center min-h-screen">
+<body class="bg-texture min-h-screen flex items-center justify-center p-3 sm:p-6">
 
-    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-lg border border-slate-200">
-        <div class="text-center mb-6 border-b pb-4">
-            <h1 class="text-2xl font-bold text-indigo-700">Asatiza Registration Form</h1>
-            <p class="text-slate-500 text-sm mt-1">Telethon 2025 ke liye apni detail darj karein</p>
-        </div>
+    <div class="w-full max-w-lg animate-fade-up">
+        <div class="bg-white rounded-3xl shadow-xl shadow-ink/10 overflow-hidden border border-slate-100">
 
-        <form id="asatizaForm" class="space-y-4">
-            
-            <!-- SMART CONNECTED DROPDOWNS -->
-            <div class="grid grid-cols-2 gap-4">
+            <!-- Letterhead -->
+            <div class="relative bg-ink px-6 py-7 sm:px-8 sm:py-8 overflow-hidden">
+                <svg class="absolute -right-8 -top-8 w-40 h-40 opacity-[0.08] pointer-events-none" viewBox="0 0 100 100" fill="none" stroke="#C4952F" stroke-width="1">
+                    <rect x="20" y="20" width="60" height="60"></rect>
+                    <rect x="20" y="20" width="60" height="60" transform="rotate(45 50 50)"></rect>
+                </svg>
+                <p class="relative text-gold text-[11px] font-semibold tracking-[0.25em] uppercase mb-2">Telethon 2026</p>
+                <h1 class="relative font-display text-white text-[26px] sm:text-3xl font-semibold leading-tight">Asatiza Registration</h1>
+                <p class="relative text-slate-300 text-sm mt-2">Telethon 2026 ke liye apni detail darj karein</p>
+            </div>
+
+            <form id="asatizaForm" class="px-6 py-6 sm:px-8 sm:py-7 space-y-5">
+
+                <!-- Location section -->
                 <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">Region</label>
-                    <select id="regionSelect" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-indigo-50 font-semibold text-indigo-800">
-                        <option value="">Select Region...</option>
-                        <!-- Regions Javascript se aayenge -->
-                    </select>
+                    <div class="flex items-center gap-1.5 mb-3">
+                        <svg class="w-3.5 h-3.5 text-gold-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.3"/></svg>
+                        <h2 class="text-[11px] font-bold text-slate-500 tracking-[0.1em] uppercase">Jamia Ki Location</h2>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label for="regionSelect" class="block text-xs font-semibold text-slate-600 mb-1.5">Region</label>
+                            <select id="regionSelect" required class="select-field w-full pl-3 pr-8 py-2.5 text-[15px] border border-slate-200 rounded-xl bg-gold-50 font-semibold text-ink focus:border-gold outline-none transition">
+                                <option value="">Chunein...</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="stateSelect" class="block text-xs font-semibold text-slate-600 mb-1.5">State</label>
+                            <select id="stateSelect" required disabled class="select-field w-full pl-3 pr-8 py-2.5 text-[15px] border border-slate-200 rounded-xl bg-white disabled:bg-slate-50 disabled:opacity-50 focus:border-gold outline-none transition">
+                                <option value="">Pehle Region</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <label for="jamiaName" class="block text-sm font-semibold text-slate-600 mb-1.5">Jamia Ka Naam</label>
+                        <select id="jamiaName" required disabled class="select-field w-full pl-3 pr-8 py-2.5 text-[15px] border border-slate-200 rounded-xl bg-white font-semibold text-ink disabled:bg-slate-50 disabled:opacity-50 focus:border-gold outline-none transition">
+                            <option value="">Pehle State chunein...</option>
+                        </select>
+                    </div>
+
+                    <div id="locationTrail" class="mt-3 flex items-center gap-1 flex-wrap min-h-[26px]"></div>
                 </div>
-                <div>
-                    <label class="block text-sm font-semibold text-slate-700 mb-1">State</label>
-                    <select id="stateSelect" required disabled class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-slate-50 disabled:opacity-50">
-                        <option value="">Pehle Region chunein</option>
-                    </select>
+
+                <div class="h-px bg-slate-100"></div>
+
+                <!-- Personal detail section -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5 text-gold-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20.5c1.4-3.8 4.8-5.8 7.5-5.8s6.1 2 7.5 5.8"/></svg>
+                        <h2 class="text-[11px] font-bold text-slate-500 tracking-[0.1em] uppercase">Aapki Detail</h2>
+                    </div>
+
+                    <div>
+                        <label for="ustazName" class="block text-sm font-semibold text-slate-600 mb-1.5">Aapka Naam</label>
+                        <input type="text" id="ustazName" required placeholder="Apna pura naam likhein" class="w-full px-3.5 py-2.5 text-[15px] border border-slate-200 rounded-xl focus:border-gold outline-none transition">
+                    </div>
+                    <div>
+                        <label for="mobileNo" class="block text-sm font-semibold text-slate-600 mb-1.5">Mobile / WhatsApp No.</label>
+                        <input type="tel" id="mobileNo" required inputmode="numeric" maxlength="10" pattern="[6-9][0-9]{9}" title="10 digit ka sahi mobile number darj karein" placeholder="Jaise: 9876543210" class="w-full px-3.5 py-2.5 text-[15px] border border-slate-200 rounded-xl focus:border-gold outline-none transition">
+                    </div>
+                    <div>
+                        <label for="className" class="block text-sm font-semibold text-slate-600 mb-1.5">Aap Kis Darje Ke Muallime Darja Hain?</label>
+                        <select id="className" required class="select-field w-full pl-3 pr-8 py-2.5 text-[15px] border border-slate-200 rounded-xl bg-white focus:border-gold outline-none transition">
+                            <option value="">Class Select Karein...</option>
+                            <option value="Hifz Class">Hifz Class</option>
+                            <option value="Ibtidaiya">Ibtidaiya</option>
+                            <option value="Sale Awwal">Sale Awwal</option>
+                            <option value="Sale Duwam">Sale Duwam</option>
+                            <option value="Ula">Ula</option>
+                            <option value="Saniya">Saniya</option>
+                            <option value="Salisa">Salisa</option>
+                            <option value="Rabia">Rabia</option>
+                            <option value="Khamisa">Khamisa</option>
+                            <option value="Sadisa">Sadisa</option>
+                            <option value="Sabia">Sabia</option>
+                            <option value="Doratul Hadis">Doratul Hadis</option>
+                        </select>
+                    </div>
                 </div>
+
+                <!-- Photo section -->
+                <div class="bg-gold-50 border border-gold-100 rounded-2xl p-4">
+                    <label class="flex items-center gap-1.5 text-xs font-bold text-slate-500 tracking-[0.1em] uppercase mb-2">
+                        <svg class="w-3.5 h-3.5 text-gold-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13.3" r="3.2"/></svg>
+                        Aapki Tasveer (Photo)
+                    </label>
+                    <input type="file" id="teacherPhoto" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-white file:text-gold-600 file:cursor-pointer hover:file:bg-gold-100 cursor-pointer transition">
+                    <p class="text-xs text-slate-500 mt-2 leading-relaxed">Photo dena zaroori nahi hai, par denge to winner poster par aayegi.</p>
+                </div>
+
+                <div id="errorBanner" class="hidden gap-2 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl p-3">
+                    <svg class="w-4 h-4 flex-shrink-0 mt-0.5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><path d="M12 16h.01"/></svg>
+                    <span id="errorText"></span>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-ink text-white font-semibold text-[15px] py-3.5 rounded-xl hover:bg-ink-700 active:scale-[0.99] disabled:opacity-70 disabled:cursor-not-allowed transition shadow-lg shadow-ink/25 flex items-center justify-center gap-2">
+                    <svg id="btnSpinner" class="hidden animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3" opacity="0.25"/><path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+                    <span id="submitBtnText">Detail Jama Karein</span>
+                </button>
+            </form>
+
+            <div id="successMsg" class="hidden px-6 py-10 sm:px-8 text-center">
+                <div class="mx-auto w-16 h-16 rounded-full bg-emerald-50 flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path class="check-path" d="M5 12.5l4.5 4.5L19 7"/></svg>
+                </div>
+                <h2 class="font-display text-xl font-semibold text-ink mb-1">Jazakallah!</h2>
+                <p class="text-slate-500 text-sm">Aapki detail successfully jama ho gayi hai.</p>
+                <p class="text-xs text-slate-400 mt-3" id="successJamiaLine"></p>
             </div>
 
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Jamia / Madarsa Ka Naam</label>
-                <select id="jamiaName" required disabled class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white font-bold text-slate-800 disabled:opacity-50">
-                    <option value="">Pehle State chunein...</option>
-                </select>
-            </div>
-
-            <!-- BAAKI KA FORM -->
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Aapka Naam (Muallim / Teacher)</label>
-                <input type="text" id="ustazName" required placeholder="Apna pura naam likhein" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Mobile / WhatsApp No.</label>
-                <input type="number" id="mobileNo" required placeholder="Jaise: 9876543210" class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500">
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-slate-700 mb-1">Aap Kis Darje Ke Muallim Hain?</label>
-                <select id="className" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 bg-white">
-                    <option value="">Class Select Karein...</option>
-                    <option value="Ibtidaiya">Ibtidaiya</option>
-                    <option value="Sale Awwal">Sale Awwal</option>
-                    <option value="Sale Duwam">Sale Duwam</option>
-                    <option value="Ula">Ula</option>
-                    <option value="Saniya">Saniya</option>
-                    <option value="Salisa">Salisa</option>
-                    <option value="Rabia">Rabia</option>
-                    <option value="Khamisa">Khamisa</option>
-                    <option value="Sadisa">Sadisa</option>
-                    <option value="Sabia">Sabia</option>
-                    <option value="Doratul Hadis">Doratul Hadis</option>
-                </select>
-            </div>
-            
-            <div class="p-3 bg-indigo-50 border border-indigo-100 rounded-lg mt-2">
-                <label class="block text-sm font-semibold text-indigo-700 mb-1">Aapki Tasveer (Photo)</label>
-                <input type="file" id="teacherPhoto" accept="image/*" class="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-100 file:text-indigo-700 hover:file:bg-indigo-200 transition">
-                <p class="text-xs text-slate-500 mt-1">Photo dena zaroori nahi hai, par denge to winner poster par aayegi.</p>
-            </div>
-            
-            <button type="submit" id="submitBtn" class="w-full bg-indigo-600 text-white font-bold py-3 rounded-lg hover:bg-indigo-700 transition mt-4 shadow-md">
-                Detail Jama Karein
-            </button>
-        </form>
-
-        <div id="successMsg" class="hidden mt-4 p-4 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-center font-bold">
-            Jazakallah! Aapki detail successfully jama ho gayi hai.
         </div>
     </div>
 
@@ -102,56 +212,80 @@
         const regionSelect = document.getElementById('regionSelect');
         const stateSelect = document.getElementById('stateSelect');
         const jamiaSelect = document.getElementById('jamiaName');
+        const locationTrail = document.getElementById('locationTrail');
+
+        const pinIconSmall = '<svg class="w-3 h-3 text-gold-600 flex-shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.5 7-12a7 7 0 1 0-14 0c0 5.5 7 12 7 12z"/><circle cx="12" cy="9" r="2.3"/></svg>';
+
+        function updateTrail() {
+            const region = regionSelect.value;
+            const state = stateSelect.value;
+            const jamia = jamiaSelect.value;
+
+            if (!region) {
+                locationTrail.innerHTML = '<span class="text-xs text-slate-400">Region se shuru karein, raasta yahan bantay hue dikhega</span>';
+                return;
+            }
+
+            const parts = [region];
+            if (state) parts.push(state);
+            if (jamia) parts.push(jamia);
+
+            let html = pinIconSmall;
+            parts.forEach((part, i) => {
+                if (i > 0) html += '<span class="text-slate-300 text-xs">&rsaquo;</span>';
+                html += '<span class="trail-chip inline-block bg-gold-50 text-ink text-xs font-semibold px-2 py-1 rounded-lg border border-gold-100">' + part + '</span>';
+            });
+            locationTrail.innerHTML = html;
+        }
 
         // Regions load karna
         for (let region in jamiaData) {
             regionSelect.add(new Option(region, region));
         }
+        updateTrail();
 
         // Jab Region change ho to State load karo
         regionSelect.addEventListener('change', function() {
             stateSelect.innerHTML = '<option value="">Select State...</option>';
             jamiaSelect.innerHTML = '<option value="">Pehle State chunein...</option>';
             jamiaSelect.disabled = true;
-            
+
             if (this.value) {
                 stateSelect.disabled = false;
-                stateSelect.classList.remove('bg-slate-50');
-                stateSelect.classList.add('bg-white');
                 for (let state in jamiaData[this.value]) {
                     stateSelect.add(new Option(state, state));
                 }
             } else {
                 stateSelect.disabled = true;
-                stateSelect.classList.add('bg-slate-50');
             }
+            updateTrail();
         });
 
         // Jab State change ho to Jamia load karo
         stateSelect.addEventListener('change', function() {
             jamiaSelect.innerHTML = '<option value="">Select Jamia...</option>';
-            
+
             if (this.value) {
                 jamiaSelect.disabled = false;
-                jamiaSelect.classList.remove('bg-slate-50');
-                jamiaSelect.classList.add('bg-indigo-50');
-                
+
                 let selectedRegion = regionSelect.value;
                 let jamiasList = jamiaData[selectedRegion][this.value];
-                
+
                 jamiasList.forEach(jamia => {
                     jamiaSelect.add(new Option(jamia, jamia));
                 });
             } else {
                 jamiaSelect.disabled = true;
-                jamiaSelect.classList.add('bg-slate-50');
             }
+            updateTrail();
         });
+
+        jamiaSelect.addEventListener('change', updateTrail);
 
          // ========================================================
         // 🛑 APNA FIREBASE CONFIG YAHAN PASTE KAREIN 🛑
         // ========================================================
-         const firebaseConfig = {
+                 const firebaseConfig = {
   apiKey: "AIzaSyC87_ca7MsGB2WjOnr6dC-IYL78TYx0Oyg",
   authDomain: "telethon-28c88.firebaseapp.com",
   projectId: "telethon-28c88",
@@ -169,18 +303,36 @@
         // ========================================================
         // 4. FORM SUBMIT LOGIC
         // ========================================================
+        const submitBtn = document.getElementById('submitBtn');
+        const submitBtnText = document.getElementById('submitBtnText');
+        const btnSpinner = document.getElementById('btnSpinner');
+        const errorBanner = document.getElementById('errorBanner');
+        const errorText = document.getElementById('errorText');
+
+        function showError(msg) {
+            errorText.textContent = msg;
+            errorBanner.classList.remove('hidden');
+            errorBanner.classList.add('flex');
+        }
+        function hideError() {
+            errorBanner.classList.add('hidden');
+            errorBanner.classList.remove('flex');
+        }
+
         document.getElementById('asatizaForm').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const btn = document.getElementById('submitBtn');
-            btn.innerHTML = "Form Submit Ho Raha Hai..."; btn.disabled = true;
+            hideError();
+            submitBtn.disabled = true;
+            btnSpinner.classList.remove('hidden');
+            submitBtnText.textContent = "Form Submit Ho Raha Hai...";
 
             try {
                 let photoUrl = "";
                 const photoInput = document.getElementById('teacherPhoto').files[0];
 
                 if (photoInput) {
-                    btn.innerHTML = "Photo Drive me upload ho rahi hai (Isme 10-15 second lag sakte hain)...";
-                    
+                    submitBtnText.textContent = "Photo Drive me upload ho rahi hai (Isme 10-15 second lag sakte hain)...";
+
                     const base64Data = await new Promise((resolve, reject) => {
                         const reader = new FileReader();
                         reader.onload = () => resolve(reader.result.split(',')[1]);
@@ -199,9 +351,9 @@
                         headers: { "Content-Type": "text/plain;charset=utf-8" },
                         body: JSON.stringify(payload)
                     });
-                    
+
                     const result = await response.json();
-                    
+
                     if (result.status === "success") {
                         photoUrl = result.url;
                     } else {
@@ -209,26 +361,31 @@
                     }
                 }
 
-                btn.innerHTML = "Detail Data Save ho raha hai...";
+                submitBtnText.textContent = "Detail Data Save ho raha hai...";
 
                 // Firestore Database me save karein (Naye Region aur State ke sath)
                 await db.collection('asatiza_details').add({
-                    region: document.getElementById('regionSelect').value,
-                    state: document.getElementById('stateSelect').value,
-                    jamiaName: document.getElementById('jamiaName').value,
+                    region: regionSelect.value,
+                    state: stateSelect.value,
+                    jamiaName: jamiaSelect.value,
                     ustazName: document.getElementById('ustazName').value.trim(),
                     mobileNo: document.getElementById('mobileNo').value.trim(),
                     className: document.getElementById('className').value,
-                    photoUrl: photoUrl, 
+                    photoUrl: photoUrl,
                     timestamp: firebase.firestore.FieldValue.serverTimestamp()
                 });
+
+                const jamiaLabel = jamiaSelect.value;
+                document.getElementById('successJamiaLine').textContent = jamiaLabel ? ("Aapki Jamia: " + jamiaLabel + " (" + regionSelect.value + ")") : '';
 
                 document.getElementById('asatizaForm').classList.add('hidden');
                 document.getElementById('successMsg').classList.remove('hidden');
             } catch (error) {
                 console.error(error);
-                alert("Error: " + error.message);
-                btn.innerHTML = "Detail Jama Karein"; btn.disabled = false;
+                showError(error.message);
+                submitBtnText.textContent = "Detail Jama Karein";
+                submitBtn.disabled = false;
+                btnSpinner.classList.add('hidden');
             }
         });
     </script>
