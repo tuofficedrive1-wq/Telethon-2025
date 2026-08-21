@@ -249,6 +249,7 @@
             tbody.innerHTML = "";
             snapshot.forEach((doc) => {
                 const data = doc.data();
+                const docId = doc.id;
                 const dateObj = data.timestamp ? data.timestamp.toDate() : new Date();
                 const dateStr = dateObj.toLocaleDateString('en-IN');
                 
