@@ -234,6 +234,17 @@
             });
         });
 
+        // --- GOOGLE DRIVE LINK CONVERTER ---
+        function getDirectImageUrl(url) {
+            if (!url) return "";
+            // Agar link Google Drive ka hai
+            if (url.includes("drive.google.com/file/d/")) {
+                let fileId = url.split("/d/")[1].split("/")[0];
+                return `https://drive.google.com/uc?export=view&id=${fileId}`;
+            }
+            return url;
+        }
+        
         // --- LOAD ASATIZA DETAILS (Updated Mukkamal Details Ke Sath) ---
         let asatizaDataList = []; // Excel export ke liye data store karenge
 
@@ -254,6 +265,7 @@
                 const dateStr = dateObj.toLocaleDateString('en-IN');
                 
                 // Photo ka URL check karna (Agar nahi hai to default icon)
+                const directUrl = getDirectImageUrl(data.photoUrl);
                 const photoHtml = data.photoUrl 
                     ? `<img src="${data.photoUrl}" onclick="openModal('${data.photoUrl}')" class="w-10 h-10 rounded-full object-cover border border-slate-200 cursor-pointer hover:ring-2 ring-indigo-300 transition" alt="Photo">`
                     : `<div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-xs">No Pic</div>`;
