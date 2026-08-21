@@ -136,6 +136,7 @@
                             <th class="p-3 border-b font-semibold">Mobile No.</th>
                             <th class="p-3 border-b font-semibold">Darja (Class)</th>
                             <th class="p-3 border-b font-semibold">Date</th>
+                            <th class="p-3 border-b font-semibold text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody id="asatizaTableBody" class="text-sm">
@@ -222,11 +223,13 @@
             tbody.innerHTML = snapshot.empty ? '<tr><td colspan="4" class="p-4 text-center text-slate-500">Koi zimmedar add nahi hua abhi.</td></tr>' : "";
             snapshot.forEach((doc) => {
                 const data = doc.data();
+                const docId = doc.id;
                 tbody.innerHTML += `<tr class="border-b hover:bg-slate-50">
                     <td class="p-3 font-semibold text-indigo-600">${data.username}</td>
                     <td class="p-3">${data.ustazName}</td>
                     <td class="p-3">${data.jamiaName}</td>
                     <td class="p-3"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-bold">${data.assignedClass}</span></td>
+                    
                 </tr>`;
             });
         });
@@ -278,6 +281,11 @@
                     <td class="p-3 font-semibold text-emerald-600">${data.mobileNo || "N/A"}</td>
                     <td class="p-3"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-bold">${data.className || "N/A"}</span></td>
                     <td class="p-3 text-xs text-slate-500">${dateStr}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteEntry('${docId}')" class="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-2 rounded-lg transition" title="Entry Delete Karein">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </td>
                 </tr>`;
             });
         });
@@ -322,6 +330,17 @@
             document.getElementById('imageModal').classList.add('hidden');
             document.getElementById('modalImage').src = "";
         }
+        // --- ENTRY DELETE LOGIC ---
+async function deleteEntry(docId) {
+    let confirmDelete = confirm("Kya aap waqai is entry ko delete karna chahte hain? Yeh hamesha ke liye delete ho jayegi.");
+    if (confirmDelete) {
+        try {
+            await db.collection('asatiza_details').doc(docId).delete();
+        } catch (error) {
+            alert("Delete karne mein error aaya: " + error.message);
+        }
+    }
+}
     </script>
 </body>
 </html>
