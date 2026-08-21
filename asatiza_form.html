@@ -174,7 +174,7 @@
                         Aapki Tasveer (Photo)
                     </label>
                     <input type="file" id="teacherPhoto" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-white file:text-gold-600 file:cursor-pointer hover:file:bg-gold-100 cursor-pointer transition">
-                    <p class="text-xs text-slate-500 mt-2 leading-relaxed">Photo dena zaroori nahi hai, par denge to winner poster par aayegi.</p>
+                    <p class="text-xs text-slate-500 mt-2 leading-relaxed">Photo dena zaroori hai.</p>
                 </div>
 
                 <div id="errorBanner" class="hidden gap-2 bg-rose-50 border border-rose-200 text-rose-700 text-sm rounded-xl p-3">
@@ -376,7 +376,7 @@
                 });
 
                 const jamiaLabel = jamiaSelect.value;
-                document.getElementById('successJamiaLine').textContent = jamiaLabel ? ("Aapki Jamia: " + jamiaLabel + " (" + regionSelect.value + ")") : '';
+                document.getElementById('successJamiaLine').textContent = jamiaLabel ? ("Aapka Jamia: " + jamiaLabel + " (" + regionSelect.value + ")") : '';
 
                 document.getElementById('asatizaForm').classList.add('hidden');
                 document.getElementById('successMsg').classList.remove('hidden');
