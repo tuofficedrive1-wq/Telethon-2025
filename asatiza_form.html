@@ -173,7 +173,7 @@
                         <svg class="w-3.5 h-3.5 text-gold-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-2h6l2 2h3v11H4z"/><circle cx="12" cy="13.3" r="3.2"/></svg>
                         Aapki Tasveer (Photo)
                     </label>
-                    <input type="file" id="teacherPhoto" accept="image/*" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-white file:text-gold-600 file:cursor-pointer hover:file:bg-gold-100 cursor-pointer transition">
+                    <input type="file" id="teacherPhoto" accept="image/*" required class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-white file:text-gold-600 file:cursor-pointer hover:file:bg-gold-100 cursor-pointer transition">
                     <p class="text-xs text-slate-500 mt-2 leading-relaxed">Photo dena zaroori hai.</p>
                 </div>
 
@@ -329,6 +329,14 @@
             try {
                 let photoUrl = "";
                 const photoInput = document.getElementById('teacherPhoto').files[0];
+                // YAHAN SE NAYA CODE ADD KAREIN
+                if (!photoInput) {
+                    showError("Photo upload karna zaroori hai. Kripya tasveer chunein.");
+                    submitBtnText.textContent = "Detail Jama Karein";
+                    submitBtn.disabled = false;
+                    btnSpinner.classList.add('hidden');
+                    return; // Code aage nahi jayega aur yahi ruk jayega
+                }
 
                 if (photoInput) {
                     submitBtnText.textContent = "Photo Drive me upload ho rahi hai (Isme 10-15 second lag sakte hain)...";
