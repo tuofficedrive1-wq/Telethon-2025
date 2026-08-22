@@ -104,19 +104,25 @@
         <div id="asatizaTab" class="hidden bg-white p-6 rounded-xl shadow-md border border-slate-200">
             
             <!-- Controls (Search & Export) -->
+            <!-- Controls (Search & Export) -->
             <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4 border-b pb-4">
                 <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
                     Asatiza Records
                     <span class="text-xs bg-emerald-100 text-emerald-700 px-2 py-1 rounded-full">Live Updates</span>
                 </h2>
                 
-                <div class="flex gap-3 w-full md:w-auto">
+                <div class="flex flex-wrap justify-end gap-3 w-full md:w-auto">
                     <!-- Search Input -->
-                    <div class="relative w-full md:w-64">
-                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Jamia, Naam ya Region talash karein..." class="w-full pl-8 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                    <div class="relative w-full sm:w-64">
+                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Jamia, Naam ya Zimmedar..." class="w-full pl-8 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-indigo-500">
                         <svg class="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
-                    <!-- Export Button -->
+                    <!-- Download Photos Button -->
+                    <button onclick="downloadFilteredPhotos()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition whitespace-nowrap">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        Download Photos
+                    </button>
+                    <!-- Export Excel Button -->
                     <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition whitespace-nowrap">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                         Export Excel
@@ -246,26 +252,50 @@
             return url;
         }
         
-        // --- LOAD ASATIZA DETAILS (ZIMMEDAR LIST KE SATH) ---
-        let asatizaDataList = []; 
+       // --- LOAD ASATIZA DETAILS (WITH A-Z SORTING & FILTERING) ---
+        let allAsatizaData = []; // Firebase ka saara data yahan store hoga
+        let currentFilteredData = []; // Table me jo dikh raha hai wo yahan hoga
+        let asatizaDataList = []; // Excel ke liye
         
         // Excel Data Yahan Save Hai
         const zimmedarList = {"AHMEDABAD": "Mahtab Misbahi", "BARODA": "Mahtab Misbahi", "BHAWNAGAR": "Mahtab Misbahi", "BHUJ": "Mahtab Misbahi", "BOMBAY HOTEL": "Mahtab Misbahi", "DHOLKA": "Mahtab Misbahi", "DHORAJI": "Mahtab Misbahi", "GADHADA": "Mahtab Misbahi", "JAMNAGAR": "Mahtab Misbahi", "JUHAPURA": "Mahtab Misbahi", "KAPADWANJ": "Mahtab Misbahi", "KOTHARA": "Mahtab Misbahi", "MANDVI": "Mahtab Misbahi", "NAKHATRANA": "Mahtab Misbahi", "RAJKOT": "Mahtab Misbahi", "SURAT": "Mahtab Misbahi", "UNN PATIYA SURAT": "Mahtab Misbahi", "VERAVAL": "Mahtab Misbahi", "VIRAMGAM": "Mahtab Misbahi", "BALAGHAT": "Akmal Kamal Madani", "BHOPAL": "Akmal Kamal Madani", "DEWAS": "Akmal Kamal Madani", "INDORE": "Akmal Kamal Madani", "JABALPUR": "Akmal Kamal Madani", "JABALPUR BYPASS": "Akmal Kamal Madani", "KATNI": "Akmal Kamal Madani", "MANDSAUR": "Akmal Kamal Madani", "LUDHIANA": "Junaid Madani", "BADMER": "Junaid Madani", "BANDHEWA": "Junaid Madani", "BHILWADA": "Junaid Madani", "BIKANER": "Junaid Madani", "DAMOLAI": "Junaid Madani", "FATAHPUR": "Junaid Madani", "JAIPUR": "Junaid Madani", "JODHPUR": "Junaid Madani", "KOTA CITY": "Junaid Madani", "KOTA STATION": "Junaid Madani", "KUCHAMAN": "Said Madani", "KUCHEEL": "Said Madani", "MAKRANA": "Said Madani", "NAGAUR": "Said Madani", "NIMBAHERA": "Said Madani", "PALI": "Said Madani", "RAJNAGAR": "Said Madani", "SHERANIABAD": "Said Madani", "UDAIPUR": "Said Madani", "ANNIGERI": "Sohail Madani", "BANGALORE": "Sohail Madani", "BELGAUM": "Sohail Madani", "DHARWAD": "Sohail Madani", "MYSORE": "Sohail Madani", "SIRSI": "Sohail Madani", "TABIB LAND HUBLI": "Sohail Madani", "ARRAH": "Azad Misbahi", "AURANGABAD": "Azad Misbahi", "BHAGALPUR": "Azad Misbahi", "PATNA": "Azad Misbahi", "PURNIA": "Azad Misbahi", "SALMARI": "Azad Misbahi", "SIWAN CITY": "Azad Misbahi", "SASARAM": "Azad Misbahi", "BADGAM": "Nisar Madani", "JAMMU": "Nisar Madani", "KULGAM": "Nisar Madani", "MONGHAMA": "Nisar Madani", "PUNCHH": "Nisar Madani", "RAJORI": "Nisar Madani", "RIYASI": "Nisar Madani", "SANGAM": "Nisar Madani", "SOPORE": "Nisar Madani", "UCCHAD": "Nisar Madani", "ALLAHABAD": "Dilkash Madani", "BANARAS": "Dilkash Madani", "COLONELGANJ": "Dilkash Madani", "FAIZABAD": "Dilkash Madani", "FARRUKHABAD": "Dilkash Madani", "GOPIGANJ": "Dilkash Madani", "GORAKHPUR": "Dilkash Madani", "JAGDISHPUR": "Dilkash Madani", "JONPUR": "Dilkash Madani", "MIRZAPUR": "Dilkash Madani", "NANPARA": "Dilkash Madani", "JHANSI": "Nasim Misbahi", "KANPUR": "Nasim Misbahi", "LUCKNOW": "Nasim Misbahi", "MAHOBA": "Nasim Misbahi", "PADAW": "Nasim Misbahi", "TANDA": "Nasim Misbahi", "UNNAO": "Nasim Misbahi", "UTRAULA": "Nasim Misbahi", "AGRA": "Nasim Misbahi", "SHAHJAHANPUR": "Nasim Misbahi", "ALIGARH": "Owais Madani", "BAREILLY SHARIF": "Owais Madani", "BILARI": "Owais Madani", "DELHI": "Owais Madani", "GAZIYABAD": "Owais Madani", "MAHUAKHEDA": "Owais Madani", "RAMPUR": "Owais Madani", "SHISHGADH": "Owais Madani", "THAKURDWARA": "Owais Madani", "TIGRI DEOBAND": "Owais Madani", "HALDWANI": "Owais Madani", "ADONI": "Abu Sufiyan Misbahi", "MACHILIPATNAM": "Abu Sufiyan Misbahi", "BALLARI": "Abu Sufiyan Misbahi", "GULBARGA SHARIF": "Abu Sufiyan Misbahi", "CHENNAI": "Abu Sufiyan Misbahi", "FALAKNUMA": "Abu Sufiyan Misbahi", "HYDERABAD": "Abu Sufiyan Misbahi", "JANGAON": "Abu Sufiyan Misbahi", "MANGALDOI ASSAM": "Shabbir Madani", "SILCHAR": "Shabbir Madani", "DHANBAD": "Shabbir Madani", "JAMSHEDPUR": "Shabbir Madani", "RANCHI": "Shabbir Madani", "RANCHI ILAHI NAGAR": "Shabbir Madani", "BHADRAK": "Shabbir Madani", "SORO": "Shabbir Madani", "ASANSOL": "Shabbir Madani", "KHIDIRPUR": "Shabbir Madani", "METIABRUZ": "Shabbir Madani", "BILASPUR": "Sarfaraz Madani", "RAIPUR": "Sarfaraz Madani", "AHMEDNAGAR": "Sarfaraz Madani", "AKOLA": "Sarfaraz Madani", "BHANDARA": "Sarfaraz Madani", "BHANDUP": "Sarfaraz Madani", "JALGAON": "Sarfaraz Madani", "KALYAN": "Sarfaraz Madani", "KAMPTEE": "Sarfaraz Madani", "KARANJA": "Sarfaraz Madani", "RAVER": "Sarfaraz Madani", "KARBALA MASJID GOVANDI": "Irfan Misbahi", "KHULDABAD": "Irfan Misbahi", "KORADI": "Irfan Misbahi", "LATUR": "Irfan Misbahi", "MAHIM": "Irfan Misbahi", "MALEGAON": "Irfan Misbahi", "MITTI MASJID GOVANDI": "Irfan Misbahi", "MODEL JAMIA": "Irfan Misbahi", "MUMBAI": "Irfan Misbahi", "NAGPUR": "Irfan Misbahi", "PUNE": "Irfan Misbahi", "SHAHADA": "Irfan Misbahi"};
 
+        // Firebase Se Data Nikaal Kar Array Me Daalna
         db.collection('asatiza_details').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
-            const tbody = document.getElementById('asatizaTableBody');
-            asatizaDataList = []; 
+            allAsatizaData = []; 
+            snapshot.forEach((doc) => {
+                const data = doc.data();
+                data.docId = doc.id;
+                data.jamiaName = data.jamiaName || "N/A";
+                data.zimmedarName = zimmedarList[data.jamiaName] || "N/A";
+                allAsatizaData.push(data);
+            });
+            renderTableAndFilter(); // Har baar naya data aane par table render hogi
+        });
 
-            if (snapshot.empty) {
-                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500">Abhi tak kisi teacher ne form nahi bhara.</td></tr>';
+        // --- FILTER, SORT & RENDER LOGIC ---
+        function renderTableAndFilter() {
+            const tbody = document.getElementById('asatizaTableBody');
+            const searchInput = document.getElementById("searchInput").value.toLowerCase();
+            
+            // 1. Data Filter Karna (Search ke hisaab se)
+            currentFilteredData = allAsatizaData.filter(data => {
+                const searchString = `${data.ustazName} ${data.jamiaName} ${data.zimmedarName} ${data.region} ${data.state}`.toLowerCase();
+                return searchString.includes(searchInput);
+            });
+
+            // 2. Data Sort Karna (Jamia Name ke hisaab se A to Z)
+            currentFilteredData.sort((a, b) => a.jamiaName.localeCompare(b.jamiaName));
+
+            // 3. HTML Table Generate Karna
+            asatizaDataList = [];
+            if (currentFilteredData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500">Koi record nahi mila.</td></tr>';
                 return;
             }
 
             tbody.innerHTML = "";
-            snapshot.forEach((doc) => {
-                const data = doc.data();
-                const docId = doc.id;
-                
+            currentFilteredData.forEach(data => {
                 const dateObj = data.timestamp ? data.timestamp.toDate() : new Date();
                 const dateStr = dateObj.toLocaleDateString('en-IN');
                 
@@ -274,14 +304,10 @@
                     ? `<img src="${directUrl}" referrerpolicy="no-referrer" onclick="openModal('${directUrl}')" class="w-10 h-10 rounded-full object-cover border border-slate-200 cursor-pointer hover:ring-2 ring-indigo-300 transition" alt="Photo">`
                     : `<div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-xs">No Pic</div>`;
 
-                // Excel List Se Zimmedar Ka Naam Nikaalna
-                const jamiaName = data.jamiaName || "N/A";
-                const zimmedarName = zimmedarList[jamiaName] || "N/A";
-
                 asatizaDataList.push({
                     "Ustaz Name": data.ustazName || "N/A",
-                    "Jamia Name": jamiaName,
-                    "Zimmedar Name": zimmedarName, // Nayi column
+                    "Jamia Name": data.jamiaName,
+                    "Zimmedar Name": data.zimmedarName,
                     "Region": data.region || "N/A",
                     "State": data.state || "N/A",
                     "Mobile No": data.mobileNo || "N/A",
@@ -290,11 +316,11 @@
                     "Submission Date": dateStr
                 });
 
-                tbody.innerHTML += `<tr class="border-b hover:bg-slate-50 search-row">
+                tbody.innerHTML += `<tr class="border-b hover:bg-slate-50">
                     <td class="p-2">${photoHtml}</td>
                     <td class="p-3 font-semibold text-slate-800">${data.ustazName || "N/A"}</td>
-                    <td class="p-3 font-bold text-indigo-700">${jamiaName}</td>
-                    <td class="p-3 text-sm font-bold text-slate-700 bg-slate-100 rounded-lg">${zimmedarName}</td>
+                    <td class="p-3 font-bold text-indigo-700">${data.jamiaName}</td>
+                    <td class="p-3 text-sm font-bold text-slate-700 bg-slate-100 rounded-lg">${data.zimmedarName}</td>
                     <td class="p-3">
                         <div class="text-sm font-semibold">${data.region || "N/A"}</div>
                         <div class="text-xs text-slate-500">${data.state || "N/A"}</div>
@@ -303,28 +329,56 @@
                     <td class="p-3"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-bold">${data.className || "N/A"}</span></td>
                     <td class="p-3 text-xs text-slate-500">${dateStr}</td>
                     <td class="p-3 text-center">
-                        <button onclick="deleteEntry('${docId}')" class="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-2 rounded-lg transition" title="Entry Delete Karein">
+                        <button onclick="deleteEntry('${data.docId}')" class="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-2 rounded-lg transition" title="Entry Delete Karein">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                         </button>
                     </td>
                 </tr>`;
             });
-        });
+        }
 
-        // --- FILTER / SEARCH LOGIC ---
+        // Jab user search me kuch likhega to ye function call hoga
         function filterTable() {
-            let input = document.getElementById("searchInput").value.toLowerCase();
-            let rows = document.getElementsByClassName("search-row");
-            
-            for (let i = 0; i < rows.length; i++) {
-                // Row ke andar ka saara text nikalenge (HTML hata kar)
-                let rowText = rows[i].innerText.toLowerCase(); 
-                if (rowText.includes(input)) {
-                    rows[i].style.display = "";
-                } else {
-                    rows[i].style.display = "none";
-                }
+            renderTableAndFilter();
+        }
+
+        // --- MULTIPLE IMAGES DOWNLOAD LOGIC ---
+        function downloadFilteredPhotos() {
+            // Sirf wahi photos lenge jo filter me hain aur jinki photoUrl mojood hai
+            const photosToDownload = currentFilteredData.filter(d => d.photoUrl).map(d => {
+                return {
+                    url: d.photoUrl,
+                    name: `${d.jamiaName}_${d.ustazName}`.replace(/[^a-zA-Z0-9]/g, '_') + '.jpg' // Safe filename
+                };
+            });
+
+            if (photosToDownload.length === 0) {
+                alert("Koi photo mojood nahi hai download karne ke liye.");
+                return;
             }
+
+            let confirmMsg = `Kya aap in ${photosToDownload.length} photos ko original quality me download karna chahte hain?\n\n(Browser aapse multiple files download karne ki permission maang sakta hai, usay 'Allow' kar dijiye ga).`;
+            if (!confirm(confirmMsg)) return;
+
+            // Browser crash na ho isliye har photo ke beech me ek chota sa gap (1 second) diya hai
+            photosToDownload.forEach((photo, index) => {
+                setTimeout(() => {
+                    let downloadUrl = photo.url;
+                    // Download karne ke liye drive URL ko force download mode me badalna zaroori hai
+                    if (downloadUrl.includes("drive.google.com/file/d/")) {
+                        let fileId = downloadUrl.split("/d/")[1].split("/")[0];
+                        downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+                    }
+                    
+                    const link = document.createElement('a');
+                    link.href = downloadUrl;
+                    link.setAttribute('download', photo.name); // Photo ka naam Jamia_Ustaz karke save hoga
+                    link.setAttribute('target', '_blank'); 
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                }, index * 1000); 
+            });
         }
 
         // --- EXPORT TO EXCEL LOGIC (SheetJS) ---
