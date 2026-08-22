@@ -132,6 +132,7 @@
                             <th class="p-3 border-b font-semibold">Photo</th>
                             <th class="p-3 border-b font-semibold">Ustaz Name</th>
                             <th class="p-3 border-b font-semibold">Jamia Name</th>
+                            <th class="p-3 border-b font-bold text-indigo-700">Zimmedar</th>
                             <th class="p-3 border-b font-semibold">Region & State</th>
                             <th class="p-3 border-b font-semibold">Mobile No.</th>
                             <th class="p-3 border-b font-semibold">Darja (Class)</th>
@@ -245,15 +246,18 @@
             return url;
         }
         
-        // --- LOAD ASATIZA DETAILS (Updated Mukkamal Details Ke Sath) ---
-        let asatizaDataList = []; // Excel export ke liye data store karenge
+        // --- LOAD ASATIZA DETAILS (ZIMMEDAR LIST KE SATH) ---
+        let asatizaDataList = []; 
+        
+        // Excel Data Yahan Save Hai
+        const zimmedarList = {"AHMEDABAD": "Mahtab Misbahi", "BARODA": "Mahtab Misbahi", "BHAWNAGAR": "Mahtab Misbahi", "BHUJ": "Mahtab Misbahi", "BOMBAY HOTEL": "Mahtab Misbahi", "DHOLKA": "Mahtab Misbahi", "DHORAJI": "Mahtab Misbahi", "GADHADA": "Mahtab Misbahi", "JAMNAGAR": "Mahtab Misbahi", "JUHAPURA": "Mahtab Misbahi", "KAPADWANJ": "Mahtab Misbahi", "KOTHARA": "Mahtab Misbahi", "MANDVI": "Mahtab Misbahi", "NAKHATRANA": "Mahtab Misbahi", "RAJKOT": "Mahtab Misbahi", "SURAT": "Mahtab Misbahi", "UNN PATIYA SURAT": "Mahtab Misbahi", "VERAVAL": "Mahtab Misbahi", "VIRAMGAM": "Mahtab Misbahi", "BALAGHAT": "Akmal Kamal Madani", "BHOPAL": "Akmal Kamal Madani", "DEWAS": "Akmal Kamal Madani", "INDORE": "Akmal Kamal Madani", "JABALPUR": "Akmal Kamal Madani", "JABALPUR BYPASS": "Akmal Kamal Madani", "KATNI": "Akmal Kamal Madani", "MANDSAUR": "Akmal Kamal Madani", "LUDHIANA": "Junaid Madani", "BADMER": "Junaid Madani", "BANDHEWA": "Junaid Madani", "BHILWADA": "Junaid Madani", "BIKANER": "Junaid Madani", "DAMOLAI": "Junaid Madani", "FATAHPUR": "Junaid Madani", "JAIPUR": "Junaid Madani", "JODHPUR": "Junaid Madani", "KOTA CITY": "Junaid Madani", "KOTA STATION": "Junaid Madani", "KUCHAMAN": "Said Madani", "KUCHEEL": "Said Madani", "MAKRANA": "Said Madani", "NAGAUR": "Said Madani", "NIMBAHERA": "Said Madani", "PALI": "Said Madani", "RAJNAGAR": "Said Madani", "SHERANIABAD": "Said Madani", "UDAIPUR": "Said Madani", "ANNIGERI": "Sohail Madani", "BANGALORE": "Sohail Madani", "BELGAUM": "Sohail Madani", "DHARWAD": "Sohail Madani", "MYSORE": "Sohail Madani", "SIRSI": "Sohail Madani", "TABIB LAND HUBLI": "Sohail Madani", "ARRAH": "Azad Misbahi", "AURANGABAD": "Azad Misbahi", "BHAGALPUR": "Azad Misbahi", "PATNA": "Azad Misbahi", "PURNIA": "Azad Misbahi", "SALMARI": "Azad Misbahi", "SIWAN CITY": "Azad Misbahi", "SASARAM": "Azad Misbahi", "BADGAM": "Nisar Madani", "JAMMU": "Nisar Madani", "KULGAM": "Nisar Madani", "MONGHAMA": "Nisar Madani", "PUNCHH": "Nisar Madani", "RAJORI": "Nisar Madani", "RIYASI": "Nisar Madani", "SANGAM": "Nisar Madani", "SOPORE": "Nisar Madani", "UCCHAD": "Nisar Madani", "ALLAHABAD": "Dilkash Madani", "BANARAS": "Dilkash Madani", "COLONELGANJ": "Dilkash Madani", "FAIZABAD": "Dilkash Madani", "FARRUKHABAD": "Dilkash Madani", "GOPIGANJ": "Dilkash Madani", "GORAKHPUR": "Dilkash Madani", "JAGDISHPUR": "Dilkash Madani", "JONPUR": "Dilkash Madani", "MIRZAPUR": "Dilkash Madani", "NANPARA": "Dilkash Madani", "JHANSI": "Nasim Misbahi", "KANPUR": "Nasim Misbahi", "LUCKNOW": "Nasim Misbahi", "MAHOBA": "Nasim Misbahi", "PADAW": "Nasim Misbahi", "TANDA": "Nasim Misbahi", "UNNAO": "Nasim Misbahi", "UTRAULA": "Nasim Misbahi", "AGRA": "Nasim Misbahi", "SHAHJAHANPUR": "Nasim Misbahi", "ALIGARH": "Owais Madani", "BAREILLY SHARIF": "Owais Madani", "BILARI": "Owais Madani", "DELHI": "Owais Madani", "GAZIYABAD": "Owais Madani", "MAHUAKHEDA": "Owais Madani", "RAMPUR": "Owais Madani", "SHISHGADH": "Owais Madani", "THAKURDWARA": "Owais Madani", "TIGRI DEOBAND": "Owais Madani", "HALDWANI": "Owais Madani", "ADONI": "Abu Sufiyan Misbahi", "MACHILIPATNAM": "Abu Sufiyan Misbahi", "BALLARI": "Abu Sufiyan Misbahi", "GULBARGA SHARIF": "Abu Sufiyan Misbahi", "CHENNAI": "Abu Sufiyan Misbahi", "FALAKNUMA": "Abu Sufiyan Misbahi", "HYDERABAD": "Abu Sufiyan Misbahi", "JANGAON": "Abu Sufiyan Misbahi", "MANGALDOI ASSAM": "Shabbir Madani", "SILCHAR": "Shabbir Madani", "DHANBAD": "Shabbir Madani", "JAMSHEDPUR": "Shabbir Madani", "RANCHI": "Shabbir Madani", "RANCHI ILAHI NAGAR": "Shabbir Madani", "BHADRAK": "Shabbir Madani", "SORO": "Shabbir Madani", "ASANSOL": "Shabbir Madani", "KHIDIRPUR": "Shabbir Madani", "METIABRUZ": "Shabbir Madani", "BILASPUR": "Sarfaraz Madani", "RAIPUR": "Sarfaraz Madani", "AHMEDNAGAR": "Sarfaraz Madani", "AKOLA": "Sarfaraz Madani", "BHANDARA": "Sarfaraz Madani", "BHANDUP": "Sarfaraz Madani", "JALGAON": "Sarfaraz Madani", "KALYAN": "Sarfaraz Madani", "KAMPTEE": "Sarfaraz Madani", "KARANJA": "Sarfaraz Madani", "RAVER": "Sarfaraz Madani", "KARBALA MASJID GOVANDI": "Irfan Misbahi", "KHULDABAD": "Irfan Misbahi", "KORADI": "Irfan Misbahi", "LATUR": "Irfan Misbahi", "MAHIM": "Irfan Misbahi", "MALEGAON": "Irfan Misbahi", "MITTI MASJID GOVANDI": "Irfan Misbahi", "MODEL JAMIA": "Irfan Misbahi", "MUMBAI": "Irfan Misbahi", "NAGPUR": "Irfan Misbahi", "PUNE": "Irfan Misbahi", "SHAHADA": "Irfan Misbahi"};
 
         db.collection('asatiza_details').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
             const tbody = document.getElementById('asatizaTableBody');
-            asatizaDataList = []; // Har update pe list clear karein
+            asatizaDataList = []; 
 
             if (snapshot.empty) {
-                tbody.innerHTML = '<tr><td colspan="7" class="p-4 text-center text-slate-500">Abhi tak kisi teacher ne form nahi bhara.</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500">Abhi tak kisi teacher ne form nahi bhara.</td></tr>';
                 return;
             }
 
@@ -261,32 +265,36 @@
             snapshot.forEach((doc) => {
                 const data = doc.data();
                 const docId = doc.id;
+                
                 const dateObj = data.timestamp ? data.timestamp.toDate() : new Date();
                 const dateStr = dateObj.toLocaleDateString('en-IN');
                 
-                // Photo ka URL check karna (Agar nahi hai to default icon)
                 const directUrl = getDirectImageUrl(data.photoUrl);
                 const photoHtml = data.photoUrl 
-                    ? `<img src="${data.photoUrl}" onclick="openModal('${data.photoUrl}')" class="w-10 h-10 rounded-full object-cover border border-slate-200 cursor-pointer hover:ring-2 ring-indigo-300 transition" alt="Photo">`
+                    ? `<img src="${directUrl}" referrerpolicy="no-referrer" onclick="openModal('${directUrl}')" class="w-10 h-10 rounded-full object-cover border border-slate-200 cursor-pointer hover:ring-2 ring-indigo-300 transition" alt="Photo">`
                     : `<div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-xs">No Pic</div>`;
 
-                // Data Array me save karna (Excel ke liye, bina HTML tags ke)
+                // Excel List Se Zimmedar Ka Naam Nikaalna
+                const jamiaName = data.jamiaName || "N/A";
+                const zimmedarName = zimmedarList[jamiaName] || "N/A";
+
                 asatizaDataList.push({
                     "Ustaz Name": data.ustazName || "N/A",
-                    "Jamia Name": data.jamiaName || "N/A",
+                    "Jamia Name": jamiaName,
+                    "Zimmedar Name": zimmedarName, // Nayi column
                     "Region": data.region || "N/A",
                     "State": data.state || "N/A",
                     "Mobile No": data.mobileNo || "N/A",
                     "Class (Darja)": data.className || "N/A",
-                    "Photo Link": data.photoUrl || "N/A",
+                    "Photo Link": directUrl || "N/A",
                     "Submission Date": dateStr
                 });
 
-                // Table row banana
                 tbody.innerHTML += `<tr class="border-b hover:bg-slate-50 search-row">
                     <td class="p-2">${photoHtml}</td>
                     <td class="p-3 font-semibold text-slate-800">${data.ustazName || "N/A"}</td>
-                    <td class="p-3 font-bold text-indigo-700">${data.jamiaName || "N/A"}</td>
+                    <td class="p-3 font-bold text-indigo-700">${jamiaName}</td>
+                    <td class="p-3 text-sm font-bold text-slate-700 bg-slate-100 rounded-lg">${zimmedarName}</td>
                     <td class="p-3">
                         <div class="text-sm font-semibold">${data.region || "N/A"}</div>
                         <div class="text-xs text-slate-500">${data.state || "N/A"}</div>
