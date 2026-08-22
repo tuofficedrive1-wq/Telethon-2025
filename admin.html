@@ -281,9 +281,10 @@
             
             // 1. Data Filter Karna
             currentFilteredData = allAsatizaData.filter(data => {
-                const searchString = `${data.ustazName} ${data.jamiaName} ${data.zimmedarName} ${data.region} ${data.state}`.toLowerCase();
+               const searchString = `${data.ustazName} ${data.jamiaName} ${data.zimmedarName} ${data.region} ${data.state} ${data.className}`.toLowerCase();
                 return searchString.includes(searchInput);
             });
+
 
             // 2. Data Sort Karna (Jamia Name A to Z)
             currentFilteredData.sort((a, b) => a.jamiaName.localeCompare(b.jamiaName));
