@@ -3,7 +3,7 @@
 <head>  
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telethon Admin Panel</title>
+    <title>Telethon 2026 - Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
     
@@ -12,7 +12,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore-compat.js"></script>
     
-    <!-- SheetJS Excel Library -->
+    <!-- Utilities -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -27,7 +27,6 @@
                 <h1 class="text-2xl font-bold">Telethon 2026 - Admin Panel</h1>
                 <p class="text-sm opacity-80">Manage Zimmedars and Asatiza Reports</p>
             </div>
-            <!-- Tabs Buttons -->
             <div class="flex gap-2 bg-indigo-800 p-1 rounded-lg">
                 <button onclick="switchTab('zimmedarTab')" id="btnZimmedar" class="px-4 py-2 bg-white text-indigo-700 font-bold rounded-md shadow transition">Zimmedar Manage</button>
                 <button onclick="switchTab('asatizaTab')" id="btnAsatiza" class="px-4 py-2 text-white font-bold rounded-md hover:bg-indigo-700 transition">Asatiza Detail</button>
@@ -38,7 +37,6 @@
         <!-- TAB 1: ZIMMEDAR MANAGE -->
         <!-- ========================================== -->
         <div id="zimmedarTab" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <!-- Form -->
             <div class="bg-white p-6 rounded-xl shadow-md border border-slate-200 h-fit">
                 <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">Naya Zimmedar Add Karein</h2>
                 <form id="createUserForm" class="space-y-4">
@@ -80,7 +78,6 @@
                 </form>
             </div>
 
-            <!-- Table -->
             <div class="col-span-2 bg-white p-6 rounded-xl shadow-md border border-slate-200">
                 <h2 class="text-xl font-bold text-slate-800 mb-4 border-b pb-2">Registered Zimmedars</h2>
                 <div class="overflow-x-auto">
@@ -100,11 +97,10 @@
         </div>
 
         <!-- ========================================== -->
-        <!-- TAB 2: ASATIZA REPORT (Naya System)        -->
+        <!-- TAB 2: ASATIZA REPORT -->
         <!-- ========================================== -->
         <div id="asatizaTab" class="hidden bg-white p-6 rounded-xl shadow-md border border-slate-200">
             
-            <!-- Controls (Search & Export) -->
             <!-- Controls (Search & Export) -->
             <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4 border-b pb-4">
                 <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -115,14 +111,14 @@
                 <div class="flex flex-wrap justify-end gap-3 w-full md:w-auto">
                     <!-- Search Input -->
                     <div class="relative w-full sm:w-64">
-                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Jamia, Naam ya Zimmedar..." class="w-full pl-8 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Jamia, Naam, Zimmedar ya Class..." class="w-full pl-8 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-indigo-500">
                         <svg class="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
-                   <!-- Download Table Image Button -->
-<button onclick="downloadTableAsImage(event)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition whitespace-nowrap shadow-sm">
-    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-    <span>Download List Image</span>
-</button>
+                    <!-- Download List Image Button -->
+                    <button onclick="downloadTableAsImage(event)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition whitespace-nowrap shadow-sm">
+                        <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        <span>Download List Image</span>
+                    </button>
                     <!-- Export Excel Button -->
                     <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition whitespace-nowrap">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -148,7 +144,7 @@
                         </tr>
                     </thead>
                     <tbody id="asatizaTableBody" class="text-sm">
-                        <tr><td colspan="7" class="p-4 text-center text-slate-500">Loading records...</td></tr>
+                        <tr><td colspan="9" class="p-4 text-center text-slate-500">Loading records...</td></tr>
                     </tbody>
                 </table>
             </div>
@@ -156,32 +152,107 @@
 
     </div>
 
-    <!-- Image Modal for Full View -->
-    <div id="imageModal" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4" onclick="closeModal()">
-        <img id="modalImage" src="" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl" onclick="event.stopPropagation()">
-        <button class="absolute top-4 right-4 text-white hover:text-gray-300" onclick="closeModal()">
+    <!-- Image View Modal -->
+    <div id="imageModal" class="fixed inset-0 bg-black/80 hidden z-[60] flex items-center justify-center p-4" onclick="closeImageModal()">
+        <img id="modalImage" src="" referrerpolicy="no-referrer" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl" onclick="event.stopPropagation()">
+        <button class="absolute top-4 right-4 text-white hover:text-gray-300" onclick="closeImageModal()">
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
         </button>
+    </div>
+
+    <!-- Edit Form Modal -->
+    <div id="editModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div class="bg-indigo-600 px-6 py-4 flex justify-between items-center">
+                <h3 class="text-white font-bold text-lg">Edit Record</h3>
+                <button onclick="closeEditModal()" class="text-white/80 hover:text-white transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <form id="editRecordForm" class="p-6 space-y-4">
+                <input type="hidden" id="editDocId">
+                
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Ustaz Name</label>
+                    <input type="text" id="editUstazName" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-indigo-500 focus:outline-none">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Jamia Name</label>
+                        <input type="text" id="editJamiaName" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Mobile No</label>
+                        <input type="tel" id="editMobileNo" required maxlength="10" pattern="[0-9]{10}" class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Region</label>
+                        <input type="text" id="editRegion" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">State</label>
+                        <input type="text" id="editState" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-500 uppercase mb-1">Class (Darja)</label>
+                    <select id="editClassName" required class="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:border-indigo-500 focus:outline-none">
+                        <option value="Hifz Class">Hifz Class</option>
+                        <option value="Ibtidaiya">Ibtidaiya</option>
+                        <option value="Sale Awwal">Sale Awwal</option>
+                        <option value="Sale Duwam">Sale Duwam</option>
+                        <option value="Ula">Ula</option>
+                        <option value="Saniya">Saniya</option>
+                        <option value="Salisa">Salisa</option>
+                        <option value="Rabia">Rabia</option>
+                        <option value="Khamisa">Khamisa</option>
+                        <option value="Sadisa">Sadisa</option>
+                        <option value="Sabia">Sabia</option>
+                        <option value="Doratul Hadis">Doratul Hadis</option>
+                    </select>
+                </div>
+
+                <div class="pt-4 border-t border-slate-100 flex gap-3 justify-end">
+                    <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-lg transition">Cancel</button>
+                    <button type="submit" id="saveEditBtn" class="px-4 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition shadow-md">Update Record</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script>
         // ========================================================
         // 🛑 APNA FIREBASE CONFIG YAHAN PASTE KAREIN 🛑
         // ========================================================
-       const firebaseConfig = {
-  apiKey: "AIzaSyC87_ca7MsGB2WjOnr6dC-IYL78TYx0Oyg",
-  authDomain: "telethon-28c88.firebaseapp.com",
-  projectId: "telethon-28c88",
-  storageBucket: "telethon-28c88.firebasestorage.app",
-  messagingSenderId: "609452116316",
-  appId: "1:609452116316:web:e940fc5dc4537b34551999",
-  measurementId: "G-FYS0PJLQQB"
-};
+        const firebaseConfig = {
+            apiKey: "AIzaSyC87_ca7MsGB2WjOnr6dC-IYL78TYx0Oyg",
+            authDomain: "telethon-28c88.firebaseapp.com",
+            projectId: "telethon-28c88",
+            storageBucket: "telethon-28c88.firebasestorage.app",
+            messagingSenderId: "609452116316",
+            appId: "1:609452116316:web:e940fc5dc4537b34551999",
+            measurementId: "G-FYS0PJLQQB"
+        };
 
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
         const secondaryApp = firebase.initializeApp(firebaseConfig, "SecondaryApp");
         const secondaryAuth = secondaryApp.auth();
+
+        // --- GOOGLE DRIVE LINK CONVERTER ---
+        function getDirectImageUrl(url) {
+            if (!url) return "";
+            if (url.includes("drive.google.com/file/d/")) {
+                let fileId = url.split("/d/")[1].split("/")[0];
+                return `https://drive.google.com/uc?export=view&id=${fileId}`;
+            }
+            return url;
+        }
 
         // --- TAB SWITCH LOGIC ---
         function switchTab(tabId) {
@@ -231,37 +302,23 @@
             tbody.innerHTML = snapshot.empty ? '<tr><td colspan="4" class="p-4 text-center text-slate-500">Koi zimmedar add nahi hua abhi.</td></tr>' : "";
             snapshot.forEach((doc) => {
                 const data = doc.data();
-                const docId = doc.id;
                 tbody.innerHTML += `<tr class="border-b hover:bg-slate-50">
                     <td class="p-3 font-semibold text-indigo-600">${data.username}</td>
                     <td class="p-3">${data.ustazName}</td>
                     <td class="p-3">${data.jamiaName}</td>
                     <td class="p-3"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-bold">${data.assignedClass}</span></td>
-                    
                 </tr>`;
             });
         });
 
-        // --- GOOGLE DRIVE LINK CONVERTER ---
-        function getDirectImageUrl(url) {
-            if (!url) return "";
-            // Agar link Google Drive ka hai
-            if (url.includes("drive.google.com/file/d/")) {
-                let fileId = url.split("/d/")[1].split("/")[0];
-                return `https://drive.google.com/uc?export=view&id=${fileId}`;
-            }
-            return url;
-        }
+        // --- LOAD ASATIZA DETAILS ---
+        let allAsatizaData = []; 
+        let currentFilteredData = [];
+        let asatizaDataList = [];
         
-       // --- LOAD ASATIZA DETAILS (WITH A-Z SORTING & FILTERING) ---
-        let allAsatizaData = []; // Firebase ka saara data yahan store hoga
-        let currentFilteredData = []; // Table me jo dikh raha hai wo yahan hoga
-        let asatizaDataList = []; // Excel ke liye
-        
-        // Excel Data Yahan Save Hai
-        const zimmedarList = {"AHMEDABAD": "Mahtab Misbahi", "BARODA": "Mahtab Misbahi", "BHAWNAGAR": "Mahtab Misbahi", "BHUJ": "Mahtab Misbahi", "BOMBAY HOTEL": "Mahtab Misbahi", "DHOLKA": "Mahtab Misbahi", "DHORAJI": "Mahtab Misbahi", "GADHADA": "Mahtab Misbahi", "JAMNAGAR": "Mahtab Misbahi", "JUHAPURA": "Mahtab Misbahi", "KAPADWANJ": "Mahtab Misbahi", "KOTHARA": "Mahtab Misbahi", "MANDVI": "Mahtab Misbahi", "MODASA": "Mahtab Misbahi", "NAKHATRANA": "Mahtab Misbahi", "RAJKOT": "Mahtab Misbahi", "SURAT": "Mahtab Misbahi", "UNN PATIYA SURAT": "Mahtab Misbahi", "VERAVAL": "Mahtab Misbahi", "VIRAMGAM": "Mahtab Misbahi", "BALAGHAT": "Akmal Kamal Madani", "BHOPAL": "Akmal Kamal Madani", "DEWAS": "Akmal Kamal Madani", "INDORE": "Akmal Kamal Madani", "JABALPUR": "Akmal Kamal Madani", "JABALPUR BYPASS": "Akmal Kamal Madani", "KATNI": "Akmal Kamal Madani", "MANDSAUR": "Akmal Kamal Madani", "LUDHIANA": "Junaid Madani", "BADMER": "Junaid Madani", "BANDHEWA": "Junaid Madani", "BHILWADA": "Junaid Madani", "BIKANER": "Junaid Madani", "DAMOLAI": "Junaid Madani", "FATAHPUR": "Junaid Madani", "JAIPUR": "Junaid Madani", "JODHPUR": "Junaid Madani", "KOTA CITY": "Junaid Madani", "KOTA STATION": "Junaid Madani", "KUCHAMAN": "Said Madani", "KUCHEEL": "Said Madani", "MAKRANA": "Said Madani", "NAGAUR": "Said Madani", "NIMBAHERA": "Said Madani", "PALI": "Said Madani", "RAJNAGAR": "Said Madani", "SHERANIABAD": "Said Madani", "UDAIPUR": "Said Madani", "ANNIGERI": "Sohail Madani", "BANGALORE": "Sohail Madani", "BELGAUM": "Sohail Madani", "DHARWAD": "Sohail Madani", "MYSORE": "Sohail Madani", "SIRSI": "Sohail Madani", "TABIB LAND HUBLI": "Sohail Madani", "ARRAH": "Azad Misbahi", "AURANGABAD": "Azad Misbahi", "BHAGALPUR": "Azad Misbahi", "PATNA": "Azad Misbahi", "PURNIA": "Azad Misbahi", "SALMARI": "Azad Misbahi", "SIWAN CITY": "Azad Misbahi", "SASARAM": "Azad Misbahi", "BADGAM": "Nisar Madani", "JAMMU": "Nisar Madani", "KULGAM": "Nisar Madani", "MONGHAMA": "Nisar Madani", "PUNCHH": "Nisar Madani", "RAJORI": "Nisar Madani", "RIYASI": "Nisar Madani", "SANGAM": "Nisar Madani", "SOPORE": "Nisar Madani", "UCCHAD": "Nisar Madani", "ALLAHABAD": "Dilkash Madani", "BANARAS": "Dilkash Madani", "COLONELGANJ": "Dilkash Madani", "FAIZABAD": "Dilkash Madani", "FARRUKHABAD": "Dilkash Madani", "GOPIGANJ": "Dilkash Madani", "GORAKHPUR": "Dilkash Madani", "JAGDISHPUR": "Dilkash Madani", "JONPUR": "Dilkash Madani", "MIRZAPUR": "Dilkash Madani", "NANPARA": "Dilkash Madani", "JHANSI": "Nasim Misbahi", "KANPUR": "Nasim Misbahi", "LUCKNOW": "Nasim Misbahi", "MAHOBA": "Nasim Misbahi", "PADAW": "Nasim Misbahi", "TANDA": "Nasim Misbahi", "UNNAO": "Nasim Misbahi", "UTRAULA": "Nasim Misbahi", "AGRA": "Nasim Misbahi", "SHAHJAHANPUR": "Nasim Misbahi", "ALIGARH": "Owais Madani", "BAREILLY SHARIF": "Owais Madani", "BILARI": "Owais Madani", "DELHI": "Owais Madani", "GAZIYABAD": "Owais Madani", "MAHUAKHEDA": "Owais Madani", "RAMPUR": "Owais Madani", "SHISHGADH": "Owais Madani", "THAKURDWARA": "Owais Madani", "TIGRI DEOBAND": "Owais Madani", "HALDWANI": "Owais Madani", "ADONI": "Abu Sufiyan Misbahi", "MACHILIPATNAM": "Abu Sufiyan Misbahi", "BALLARI": "Abu Sufiyan Misbahi", "GULBARGA SHARIF": "Abu Sufiyan Misbahi", "CHENNAI": "Abu Sufiyan Misbahi", "FALAKNUMA": "Abu Sufiyan Misbahi", "HYDERABAD": "Abu Sufiyan Misbahi", "JANGAON": "Abu Sufiyan Misbahi", "MANGALDOI ASSAM": "Shabbir Madani", "SILCHAR": "Shabbir Madani", "DHANBAD": "Shabbir Madani", "JAMSHEDPUR": "Shabbir Madani", "RANCHI": "Shabbir Madani", "RANCHI ILAHI NAGAR": "Shabbir Madani", "BHADRAK": "Shabbir Madani", "SORO": "Shabbir Madani", "ASANSOL": "Shabbir Madani", "KHIDIRPUR": "Shabbir Madani", "METIABRUZ": "Shabbir Madani", "BILASPUR": "Sarfaraz Madani", "RAIPUR": "Sarfaraz Madani", "AHMEDNAGAR": "Sarfaraz Madani", "AKOLA": "Sarfaraz Madani", "BHANDARA": "Sarfaraz Madani", "BHANDUP": "Sarfaraz Madani", "JALGAON": "Sarfaraz Madani", "KALYAN": "Sarfaraz Madani", "KAMPTEE": "Sarfaraz Madani", "KARANJA": "Sarfaraz Madani", "RAVER": "Sarfaraz Madani", "KARBALA MASJID GOVANDI": "Irfan Misbahi", "KHULDABAD": "Irfan Misbahi", "KORADI": "Irfan Misbahi", "LATUR": "Irfan Misbahi", "MAHIM": "Irfan Misbahi", "MALEGAON": "Irfan Misbahi", "MITTI MASJID GOVANDI": "Irfan Misbahi", "MODEL JAMIA": "Irfan Misbahi", "MUMBAI": "Irfan Misbahi", "NAGPUR": "Irfan Misbahi", "PUNE": "Irfan Misbahi", "SHAHADA": "Irfan Misbahi"};
+        // Excel Data For Zimmedar List
+        const zimmedarList = {"AHMEDABAD": "Mahtab Misbahi", "BARODA": "Mahtab Misbahi", "BHAWNAGAR": "Mahtab Misbahi", "BHUJ": "Mahtab Misbahi", "BOMBAY HOTEL": "Mahtab Misbahi", "DHOLKA": "Mahtab Misbahi", "DHORAJI": "Mahtab Misbahi", "GADHADA": "Mahtab Misbahi", "JAMNAGAR": "Mahtab Misbahi", "JUHAPURA": "Mahtab Misbahi", "KAPADWANJ": "Mahtab Misbahi", "KOTHARA": "Mahtab Misbahi", "MANDVI": "Mahtab Misbahi", "NAKHATRANA": "Mahtab Misbahi", "RAJKOT": "Mahtab Misbahi", "SURAT": "Mahtab Misbahi", "UNN PATIYA SURAT": "Mahtab Misbahi", "VERAVAL": "Mahtab Misbahi", "VIRAMGAM": "Mahtab Misbahi", "BALAGHAT": "Akmal Kamal Madani", "BHOPAL": "Akmal Kamal Madani", "DEWAS": "Akmal Kamal Madani", "INDORE": "Akmal Kamal Madani", "JABALPUR": "Akmal Kamal Madani", "JABALPUR BYPASS": "Akmal Kamal Madani", "KATNI": "Akmal Kamal Madani", "MANDSAUR": "Akmal Kamal Madani", "LUDHIANA": "Junaid Madani", "BADMER": "Junaid Madani", "BANDHEWA": "Junaid Madani", "BHILWADA": "Junaid Madani", "BIKANER": "Junaid Madani", "DAMOLAI": "Junaid Madani", "FATAHPUR": "Junaid Madani", "JAIPUR": "Junaid Madani", "JODHPUR": "Junaid Madani", "KOTA CITY": "Junaid Madani", "KOTA STATION": "Junaid Madani", "KUCHAMAN": "Said Madani", "KUCHEEL": "Said Madani", "MAKRANA": "Said Madani", "NAGAUR": "Said Madani", "NIMBAHERA": "Said Madani", "PALI": "Said Madani", "RAJNAGAR": "Said Madani", "SHERANIABAD": "Said Madani", "UDAIPUR": "Said Madani", "ANNIGERI": "Sohail Madani", "BANGALORE": "Sohail Madani", "BELGAUM": "Sohail Madani", "DHARWAD": "Sohail Madani", "MYSORE": "Sohail Madani", "SIRSI": "Sohail Madani", "TABIB LAND HUBLI": "Sohail Madani", "ARRAH": "Azad Misbahi", "AURANGABAD": "Azad Misbahi", "BHAGALPUR": "Azad Misbahi", "PATNA": "Azad Misbahi", "PURNIA": "Azad Misbahi", "SALMARI": "Azad Misbahi", "SIWAN CITY": "Azad Misbahi", "SASARAM": "Azad Misbahi", "BADGAM": "Nisar Madani", "JAMMU": "Nisar Madani", "KULGAM": "Nisar Madani", "MONGHAMA": "Nisar Madani", "PUNCHH": "Nisar Madani", "RAJORI": "Nisar Madani", "RIYASI": "Nisar Madani", "SANGAM": "Nisar Madani", "SOPORE": "Nisar Madani", "UCCHAD": "Nisar Madani", "ALLAHABAD": "Dilkash Madani", "BANARAS": "Dilkash Madani", "COLONELGANJ": "Dilkash Madani", "FAIZABAD": "Dilkash Madani", "FARRUKHABAD": "Dilkash Madani", "GOPIGANJ": "Dilkash Madani", "GORAKHPUR": "Dilkash Madani", "JAGDISHPUR": "Dilkash Madani", "JONPUR": "Dilkash Madani", "MIRZAPUR": "Dilkash Madani", "NANPARA": "Dilkash Madani", "JHANSI": "Nasim Misbahi", "KANPUR": "Nasim Misbahi", "LUCKNOW": "Nasim Misbahi", "MAHOBA": "Nasim Misbahi", "PADAW": "Nasim Misbahi", "TANDA": "Nasim Misbahi", "UNNAO": "Nasim Misbahi", "UTRAULA": "Nasim Misbahi", "AGRA": "Nasim Misbahi", "SHAHJAHANPUR": "Nasim Misbahi", "ALIGARH": "Owais Madani", "BAREILLY SHARIF": "Owais Madani", "BILARI": "Owais Madani", "DELHI": "Owais Madani", "GAZIYABAD": "Owais Madani", "MAHUAKHEDA": "Owais Madani", "RAMPUR": "Owais Madani", "SHISHGADH": "Owais Madani", "THAKURDWARA": "Owais Madani", "TIGRI DEOBAND": "Owais Madani", "HALDWANI": "Owais Madani", "ADONI": "Abu Sufiyan Misbahi", "MACHILIPATNAM": "Abu Sufiyan Misbahi", "BALLARI": "Abu Sufiyan Misbahi", "GULBARGA SHARIF": "Abu Sufiyan Misbahi", "CHENNAI": "Abu Sufiyan Misbahi", "FALAKNUMA": "Abu Sufiyan Misbahi", "HYDERABAD": "Abu Sufiyan Misbahi", "JANGAON": "Abu Sufiyan Misbahi", "MANGALDOI ASSAM": "Shabbir Madani", "SILCHAR": "Shabbir Madani", "DHANBAD": "Shabbir Madani", "JAMSHEDPUR": "Shabbir Madani", "RANCHI": "Shabbir Madani", "RANCHI ILAHI NAGAR": "Shabbir Madani", "BHADRAK": "Shabbir Madani", "SORO": "Shabbir Madani", "ASANSOL": "Shabbir Madani", "KHIDIRPUR": "Shabbir Madani", "METIABRUZ": "Shabbir Madani", "BILASPUR": "Sarfaraz Madani", "RAIPUR": "Sarfaraz Madani", "AHMEDNAGAR": "Sarfaraz Madani", "AKOLA": "Sarfaraz Madani", "BHANDARA": "Sarfaraz Madani", "BHANDUP": "Sarfaraz Madani", "JALGAON": "Sarfaraz Madani", "KALYAN": "Sarfaraz Madani", "KAMPTEE": "Sarfaraz Madani", "KARANJA": "Sarfaraz Madani", "RAVER": "Sarfaraz Madani", "KARBALA MASJID GOVANDI": "Irfan Misbahi", "KHULDABAD": "Irfan Misbahi", "KORADI": "Irfan Misbahi", "LATUR": "Irfan Misbahi", "MAHIM": "Irfan Misbahi", "MALEGAON": "Irfan Misbahi", "MITTI MASJID GOVANDI": "Irfan Misbahi", "MODEL JAMIA": "Irfan Misbahi", "MUMBAI": "Irfan Misbahi", "NAGPUR": "Irfan Misbahi", "PUNE": "Irfan Misbahi", "SHAHADA": "Irfan Misbahi"};
 
-        // Firebase Se Data Nikaal Kar Array Me Daalna
         db.collection('asatiza_details').orderBy('timestamp', 'desc').onSnapshot((snapshot) => {
             allAsatizaData = []; 
             snapshot.forEach((doc) => {
@@ -271,41 +328,40 @@
                 data.zimmedarName = zimmedarList[data.jamiaName] || "N/A";
                 allAsatizaData.push(data);
             });
-            renderTableAndFilter(); // Har baar naya data aane par table render hogi
+            renderTableAndFilter(); 
         });
 
-       // --- FILTER, SORT & RENDER LOGIC ---
+        // --- FILTER, SORT & RENDER LOGIC ---
         function renderTableAndFilter() {
             const tbody = document.getElementById('asatizaTableBody');
             const searchInput = document.getElementById("searchInput").value.toLowerCase();
             
-            // 1. Data Filter Karna
             currentFilteredData = allAsatizaData.filter(data => {
-               const searchString = `${data.ustazName} ${data.jamiaName} ${data.zimmedarName} ${data.region} ${data.state} ${data.className}`.toLowerCase();
+                const searchString = `${data.ustazName} ${data.jamiaName} ${data.zimmedarName} ${data.region} ${data.state} ${data.className}`.toLowerCase();
                 return searchString.includes(searchInput);
             });
 
-
-            // 2. Data Sort Karna (Jamia Name A to Z)
             currentFilteredData.sort((a, b) => a.jamiaName.localeCompare(b.jamiaName));
 
-            // 3. HTML Table Generate Karna (Speed Optimize Kiya Hua)
             asatizaDataList = [];
             if (currentFilteredData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500">Koi record nahi mila.</td></tr>';
                 return;
             }
 
-            // FAST RENDERING: Yahan ek variable banaya hai taaki browser hang na ho
             let tableHTML = ""; 
+            // Save data arrays directly to window for global access by edit function
+            window.renderedDataMap = {}; 
 
             currentFilteredData.forEach(data => {
+                window.renderedDataMap[data.docId] = data; // Easy retrieval for edit form
+                
                 const dateObj = data.timestamp ? data.timestamp.toDate() : new Date();
                 const dateStr = dateObj.toLocaleDateString('en-IN');
                 
                 const directUrl = getDirectImageUrl(data.photoUrl);
                 const photoHtml = data.photoUrl 
-                    ? `<img src="${directUrl}" referrerpolicy="no-referrer" onclick="openModal('${directUrl}')" class="w-10 h-10 rounded-full object-cover border border-slate-200 cursor-pointer hover:ring-2 ring-indigo-300 transition" alt="Photo">`
+                    ? `<img src="${directUrl}" referrerpolicy="no-referrer" onclick="openImageModal('${directUrl}')" class="w-10 h-10 rounded-full object-cover border border-slate-200 cursor-pointer hover:ring-2 ring-indigo-300 transition" alt="Photo">`
                     : `<div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-xs">No Pic</div>`;
 
                 asatizaDataList.push({
@@ -320,28 +376,30 @@
                     "Submission Date": dateStr
                 });
 
-                // tableHTML me pehle saara data jama karenge
-                tableHTML += `<tr class="border-b hover:bg-slate-50 search-row">
+                tableHTML += `<tr class="border-b hover:bg-slate-50 search-row" id="row-${data.docId}">
                     <td class="p-2">${photoHtml}</td>
                     <td class="p-3 font-semibold text-slate-800">${data.ustazName || "N/A"}</td>
                     <td class="p-3 font-bold text-indigo-700">${data.jamiaName}</td>
-                    <td class="p-3 text-sm font-bold text-slate-700 bg-slate-100 rounded-lg">${data.zimmedarName}</td>
+                    <td class="p-3 text-sm font-bold text-slate-700 bg-slate-100 rounded-lg border-x-4 border-white">${data.zimmedarName}</td>
                     <td class="p-3">
                         <div class="text-sm font-semibold">${data.region || "N/A"}</div>
                         <div class="text-xs text-slate-500">${data.state || "N/A"}</div>
                     </td>
                     <td class="p-3 font-semibold text-emerald-600">${data.mobileNo || "N/A"}</td>
-                    <td class="p-3"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-bold">${data.className || "N/A"}</span></td>
+                    <td class="p-3"><span class="bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full text-xs font-bold whitespace-nowrap">${data.className || "N/A"}</span></td>
                     <td class="p-3 text-xs text-slate-500">${dateStr}</td>
                     <td class="p-3 text-center">
-                        <button onclick="deleteEntry('${data.docId}')" class="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-2 rounded-lg transition" title="Entry Delete Karein">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                        </button>
+                        <div class="flex items-center justify-center gap-2" data-html2canvas-ignore>
+                            <button onclick="openEditModal('${data.docId}')" class="text-indigo-500 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100 p-2 rounded-lg transition" title="Record Edit Karein">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                            </button>
+                            <button onclick="deleteEntry('${data.docId}')" class="text-rose-500 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 p-2 rounded-lg transition" title="Entry Delete Karein">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                            </button>
+                        </div>
                     </td>
                 </tr>`;
             });
-            
-            // Aakhir me ek hi baar poori table update hogi, jis se hang nahi hoga
             tbody.innerHTML = tableHTML; 
         }
 
@@ -349,89 +407,124 @@
         let searchTimeout;
         function filterTable() {
             clearTimeout(searchTimeout);
-            // Jab tak aap type kar rahe honge ye ruke ga, type rokne ke 300 millisecond baad filter chalega
             searchTimeout = setTimeout(() => {
                 renderTableAndFilter();
             }, 300); 
         }
 
-        // Jab user search me kuch likhega to ye function call hoga
-        function filterTable() {
-            renderTableAndFilter();
+        // --- ENTRY DELETE LOGIC ---
+        async function deleteEntry(docId) {
+            if (confirm("Kya aap waqai is entry ko delete karna chahte hain? Yeh hamesha ke liye delete ho jayegi.")) {
+                try {
+                    await db.collection('asatiza_details').doc(docId).delete();
+                } catch (error) {
+                    alert("Delete karne mein error aaya: " + error.message);
+                }
+            }
         }
 
-      // --- TABLE KI IMAGE (SCREENSHOT) DOWNLOAD KARNE KA LOGIC ---
+        // --- ENTRY EDIT & UPDATE LOGIC ---
+        function openEditModal(docId) {
+            const data = window.renderedDataMap[docId];
+            if(!data) return;
+
+            // Form me purana data bharna
+            document.getElementById('editDocId').value = docId;
+            document.getElementById('editUstazName').value = data.ustazName || '';
+            document.getElementById('editJamiaName').value = data.jamiaName || '';
+            document.getElementById('editMobileNo').value = data.mobileNo || '';
+            document.getElementById('editRegion').value = data.region || '';
+            document.getElementById('editState').value = data.state || '';
+            
+            // Class Dropdown set karna
+            const classSelect = document.getElementById('editClassName');
+            classSelect.value = data.className || '';
+            
+            // Modal Dikhana
+            document.getElementById('editModal').classList.remove('hidden');
+        }
+
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
+            document.getElementById('editRecordForm').reset();
+        }
+
+        // Form Submit hone par Database me update karna
+        document.getElementById('editRecordForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const docId = document.getElementById('editDocId').value;
+            const btn = document.getElementById('saveEditBtn');
+            btn.innerHTML = "Updating..."; btn.disabled = true;
+
+            try {
+                await db.collection('asatiza_details').doc(docId).update({
+                    ustazName: document.getElementById('editUstazName').value.trim(),
+                    jamiaName: document.getElementById('editJamiaName').value.trim(),
+                    mobileNo: document.getElementById('editMobileNo').value.trim(),
+                    region: document.getElementById('editRegion').value.trim(),
+                    state: document.getElementById('editState').value.trim(),
+                    className: document.getElementById('editClassName').value
+                });
+                closeEditModal();
+                // Alert dena zaroori nahi, kyu ki table auto update ho jayegi
+            } catch (error) {
+                alert("Update karne mein error aaya: " + error.message);
+            } finally {
+                btn.innerHTML = "Update Record"; btn.disabled = false;
+            }
+        });
+
+        // --- EXPORT TO EXCEL LOGIC ---
+        function exportToExcel() {
+            if (asatizaDataList.length === 0) { alert("Koi data mojood nahi hai."); return; }
+            const worksheet = XLSX.utils.json_to_sheet(asatizaDataList);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Asatiza Details");
+            XLSX.writeFile(workbook, "Asatiza_Telethon_2026.xlsx");
+        }
+
+        // --- TABLE IMAGE (SCREENSHOT) LOGIC ---
         function downloadTableAsImage(event) {
             const tableElement = document.getElementById('asatizaMainTable');
             const btn = event.currentTarget;
             const btnText = btn.querySelector('span');
             const originalText = btnText.innerText;
             
-            // Loading state
             btnText.innerText = "Processing...";
             btn.classList.add("opacity-70", "cursor-wait");
 
-            // HTML ko Canvas (Image) me convert karna
             html2canvas(tableElement, {
-                scale: 2, // HD Quality ke liye 2x scale
-                backgroundColor: "#ffffff", // Background transparent na rahe
-                useCORS: true // Table ke andar ki profile photos ko allow karne ke liye
+                scale: 2, 
+                backgroundColor: "#ffffff", 
+                useCORS: true 
             }).then(canvas => {
                 const searchVal = document.getElementById("searchInput").value.trim();
                 const fileName = searchVal ? `Telethon_List_${searchVal}.png` : 'Telethon_List_All.png';
                 
-                // Image download karwana
                 const link = document.createElement('a');
                 link.download = fileName;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 
-                // Button wapas normal karna
                 btnText.innerText = originalText;
                 btn.classList.remove("opacity-70", "cursor-wait");
             }).catch(error => {
-                console.error("Image export failed:", error);
+                console.error(error);
                 alert("Image generate karne mein kuch masla aaya.");
                 btnText.innerText = originalText;
                 btn.classList.remove("opacity-70", "cursor-wait");
             });
         }
 
-        // --- EXPORT TO EXCEL LOGIC (SheetJS) ---
-        function exportToExcel() {
-            if (asatizaDataList.length === 0) {
-                alert("Koi data mojood nahi hai export karne ke liye.");
-                return;
-            }
-            // Array of Objects ko Excel sheet me convert karna
-            const worksheet = XLSX.utils.json_to_sheet(asatizaDataList);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, "Asatiza Details");
-            
-            // File download karwana
-            XLSX.writeFile(workbook, "Asatiza_Telethon_2026.xlsx");
-        }
-
-        // --- IMAGE MODAL LOGIC (Photo Badi Karne Ke Liye) ---
-        function openModal(imgSrc) {
+        // --- IMAGE ZOOM MODAL LOGIC ---
+        function openImageModal(imgSrc) {
             document.getElementById('modalImage').src = imgSrc;
             document.getElementById('imageModal').classList.remove('hidden');
         }
-        function closeModal() {
+        function closeImageModal() {
             document.getElementById('imageModal').classList.add('hidden');
             document.getElementById('modalImage').src = "";
         }
-        // --- ENTRY DELETE LOGIC ---
-async function deleteEntry(docId) {
-    let confirmDelete = confirm("Kya aap waqai is entry ko delete karna chahte hain? Yeh hamesha ke liye delete ho jayegi.");
-    if (confirmDelete) {
-        try {
-            await db.collection('asatiza_details').doc(docId).delete();
-        } catch (error) {
-            alert("Delete karne mein error aaya: " + error.message);
-        }
-    }
-}
     </script>
 </body>
 </html>
