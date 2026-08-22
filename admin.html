@@ -14,6 +14,7 @@
     
     <!-- SheetJS Excel Library -->
     <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>body { font-family: 'Poppins', sans-serif; background-color: #f8fafc; } .hidden { display: none !important; }</style>
 </head>
@@ -117,11 +118,11 @@
                         <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Jamia, Naam ya Zimmedar..." class="w-full pl-8 pr-3 py-2 border rounded-lg text-sm focus:outline-none focus:border-indigo-500">
                         <svg class="w-4 h-4 absolute left-2.5 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
                     </div>
-                    <!-- Download Photos Button -->
-                    <button onclick="downloadFilteredPhotos()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition whitespace-nowrap">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-                        Download Photos
-                    </button>
+                   <!-- Download Table Image Button -->
+<button onclick="downloadTableAsImage(event)" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition whitespace-nowrap shadow-sm">
+    <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+    <span>Download List Image</span>
+</button>
                     <!-- Export Excel Button -->
                     <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2 px-4 rounded-lg text-sm flex items-center gap-2 transition whitespace-nowrap">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
@@ -342,42 +343,40 @@
             renderTableAndFilter();
         }
 
-        // --- MULTIPLE IMAGES DOWNLOAD LOGIC ---
-        function downloadFilteredPhotos() {
-            // Sirf wahi photos lenge jo filter me hain aur jinki photoUrl mojood hai
-            const photosToDownload = currentFilteredData.filter(d => d.photoUrl).map(d => {
-                return {
-                    url: d.photoUrl,
-                    name: `${d.jamiaName}_${d.ustazName}`.replace(/[^a-zA-Z0-9]/g, '_') + '.jpg' // Safe filename
-                };
-            });
+      // --- TABLE KI IMAGE (SCREENSHOT) DOWNLOAD KARNE KA LOGIC ---
+        function downloadTableAsImage(event) {
+            const tableElement = document.getElementById('asatizaMainTable');
+            const btn = event.currentTarget;
+            const btnText = btn.querySelector('span');
+            const originalText = btnText.innerText;
+            
+            // Loading state
+            btnText.innerText = "Processing...";
+            btn.classList.add("opacity-70", "cursor-wait");
 
-            if (photosToDownload.length === 0) {
-                alert("Koi photo mojood nahi hai download karne ke liye.");
-                return;
-            }
-
-            let confirmMsg = `Kya aap in ${photosToDownload.length} photos ko original quality me download karna chahte hain?\n\n(Browser aapse multiple files download karne ki permission maang sakta hai, usay 'Allow' kar dijiye ga).`;
-            if (!confirm(confirmMsg)) return;
-
-            // Browser crash na ho isliye har photo ke beech me ek chota sa gap (1 second) diya hai
-            photosToDownload.forEach((photo, index) => {
-                setTimeout(() => {
-                    let downloadUrl = photo.url;
-                    // Download karne ke liye drive URL ko force download mode me badalna zaroori hai
-                    if (downloadUrl.includes("drive.google.com/file/d/")) {
-                        let fileId = downloadUrl.split("/d/")[1].split("/")[0];
-                        downloadUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-                    }
-                    
-                    const link = document.createElement('a');
-                    link.href = downloadUrl;
-                    link.setAttribute('download', photo.name); // Photo ka naam Jamia_Ustaz karke save hoga
-                    link.setAttribute('target', '_blank'); 
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
-                }, index * 1000); 
+            // HTML ko Canvas (Image) me convert karna
+            html2canvas(tableElement, {
+                scale: 2, // HD Quality ke liye 2x scale
+                backgroundColor: "#ffffff", // Background transparent na rahe
+                useCORS: true // Table ke andar ki profile photos ko allow karne ke liye
+            }).then(canvas => {
+                const searchVal = document.getElementById("searchInput").value.trim();
+                const fileName = searchVal ? `Telethon_List_${searchVal}.png` : 'Telethon_List_All.png';
+                
+                // Image download karwana
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                // Button wapas normal karna
+                btnText.innerText = originalText;
+                btn.classList.remove("opacity-70", "cursor-wait");
+            }).catch(error => {
+                console.error("Image export failed:", error);
+                alert("Image generate karne mein kuch masla aaya.");
+                btnText.innerText = originalText;
+                btn.classList.remove("opacity-70", "cursor-wait");
             });
         }
 
