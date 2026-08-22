@@ -274,28 +274,30 @@
             renderTableAndFilter(); // Har baar naya data aane par table render hogi
         });
 
-        // --- FILTER, SORT & RENDER LOGIC ---
+       // --- FILTER, SORT & RENDER LOGIC ---
         function renderTableAndFilter() {
             const tbody = document.getElementById('asatizaTableBody');
             const searchInput = document.getElementById("searchInput").value.toLowerCase();
             
-            // 1. Data Filter Karna (Search ke hisaab se)
+            // 1. Data Filter Karna
             currentFilteredData = allAsatizaData.filter(data => {
                 const searchString = `${data.ustazName} ${data.jamiaName} ${data.zimmedarName} ${data.region} ${data.state}`.toLowerCase();
                 return searchString.includes(searchInput);
             });
 
-            // 2. Data Sort Karna (Jamia Name ke hisaab se A to Z)
+            // 2. Data Sort Karna (Jamia Name A to Z)
             currentFilteredData.sort((a, b) => a.jamiaName.localeCompare(b.jamiaName));
 
-            // 3. HTML Table Generate Karna
+            // 3. HTML Table Generate Karna (Speed Optimize Kiya Hua)
             asatizaDataList = [];
             if (currentFilteredData.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500">Koi record nahi mila.</td></tr>';
                 return;
             }
 
-            tbody.innerHTML = "";
+            // FAST RENDERING: Yahan ek variable banaya hai taaki browser hang na ho
+            let tableHTML = ""; 
+
             currentFilteredData.forEach(data => {
                 const dateObj = data.timestamp ? data.timestamp.toDate() : new Date();
                 const dateStr = dateObj.toLocaleDateString('en-IN');
@@ -317,7 +319,8 @@
                     "Submission Date": dateStr
                 });
 
-                tbody.innerHTML += `<tr class="border-b hover:bg-slate-50">
+                // tableHTML me pehle saara data jama karenge
+                tableHTML += `<tr class="border-b hover:bg-slate-50 search-row">
                     <td class="p-2">${photoHtml}</td>
                     <td class="p-3 font-semibold text-slate-800">${data.ustazName || "N/A"}</td>
                     <td class="p-3 font-bold text-indigo-700">${data.jamiaName}</td>
@@ -336,6 +339,19 @@
                     </td>
                 </tr>`;
             });
+            
+            // Aakhir me ek hi baar poori table update hogi, jis se hang nahi hoga
+            tbody.innerHTML = tableHTML; 
+        }
+
+        // --- SMART SEARCH (Debounce) LOGIC ---
+        let searchTimeout;
+        function filterTable() {
+            clearTimeout(searchTimeout);
+            // Jab tak aap type kar rahe honge ye ruke ga, type rokne ke 300 millisecond baad filter chalega
+            searchTimeout = setTimeout(() => {
+                renderTableAndFilter();
+            }, 300); 
         }
 
         // Jab user search me kuch likhega to ye function call hoga
