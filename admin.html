@@ -146,7 +146,8 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse" id="asatizaMainTable">
                     <thead>
-                        <tr class="bg-slate-100 text-slate-600 text-xs uppercase tracking-wider">
+                       <tr class="bg-slate-100 text-slate-600 text-xs uppercase tracking-wider">
+                            <th class="p-3 border-b font-bold">Sr.</th>
                             <th class="p-3 border-b font-semibold">Photo</th>
                             <th class="p-3 border-b font-semibold">Ustaz Name</th>
                             <th class="p-3 border-b font-semibold">Jamia Name</th>
@@ -379,15 +380,19 @@
             document.getElementById('countClass').innerText = uniqueClasses;
             // 👆 NAYA CODE YAHAN KHATAM 👆
 
+            // 3. HTML Table Generate Karna
             asatizaDataList = [];
-
             if (currentFilteredData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="p-4 text-center text-slate-500">Koi record nahi mila.</td></tr>';
+                // Colspan ko 9 se 10 kar diya kyunki ek naya column (Sr.) add hua hai
+                tbody.innerHTML = '<tr><td colspan="10" class="p-4 text-center text-slate-500">Koi record nahi mila.</td></tr>';
                 return;
             }
 
             let tableHTML = ""; 
             window.renderedDataMap = {}; 
+            
+            // 👇 YAHAN SE SERIAL NUMBER SHURU HOGA 👇
+            let serialNumber = 1; 
 
             currentFilteredData.forEach(data => {
                 window.renderedDataMap[data.docId] = data; 
@@ -400,10 +405,11 @@
                     ? `<img src="${directUrl}" referrerpolicy="no-referrer" onclick="openImageModal('${directUrl}')" class="w-10 h-10 rounded-full object-cover border border-slate-200 cursor-pointer hover:ring-2 ring-indigo-300 transition" alt="Photo">`
                     : `<div class="w-10 h-10 rounded-full bg-slate-200 flex items-center justify-center text-slate-400 text-xs">No Pic</div>`;
 
-                // Class aur Section ko ek sath jodne ka logic (Jaise: Sale Awwal (B) )
                 const classWithSection = data.section ? `${data.className} (${data.section})` : data.className;
 
+                // Excel sheet mein bhi Sr. No add ho jayega
                 asatizaDataList.push({
+                    "Sr. No": serialNumber, 
                     "Ustaz Name": data.ustazName || "N/A",
                     "Jamia Name": data.jamiaName,
                     "Zimmedar Name": data.zimmedarName,
@@ -416,6 +422,7 @@
                 });
 
                 tableHTML += `<tr class="border-b hover:bg-slate-50 search-row" id="row-${data.docId}">
+                    <td class="p-3 font-bold text-slate-500 text-xs">${serialNumber}</td>
                     <td class="p-2">${photoHtml}</td>
                     <td class="p-3 font-semibold text-slate-800">${data.ustazName || "N/A"}</td>
                     <td class="p-3 font-bold text-indigo-700">${data.jamiaName}</td>
@@ -438,8 +445,11 @@
                         </div>
                     </td>
                 </tr>`;
+                
+                // 👇 HAR ROW KE BAAD NUMBER EK (1) BADH JAYEGA 👇
+                serialNumber++; 
             });
-            tbody.innerHTML = tableHTML; 
+            tbody.innerHTML = tableHTML;
         }
 
         // --- ENTRY EDIT & UPDATE LOGIC ---
